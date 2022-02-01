@@ -302,9 +302,9 @@
 	end
 
 // Global clock input buffers
-	IBUFG uibufg4p  (.I(tmb_clock0  ),.O(tmb_clock0_ibufg));	// synthesis attribute LOC of uibufg4p   is "AF18"
-	BUFG ugbuftmb1x	(.I(clock_dcm   ),.O(clock           ));	// synthesis attribute LOC of ugbuftmb1x is "BUFGMUX0P"
-	BUFG ugbuftmb2x	(.I(clock_2x_dcm),.O(clock_2x        ));	// synthesis attribute LOC of ugbuftmb2x is "BUFGMUX2P"
+	IBUFG uibufg4p  (.I(tmb_clock0  ),.O(tmb_clock0_ibufg));	//  attribute LOC of uibufg4p   is "AF18"
+	BUFG ugbuftmb1x	(.I(clock_dcm   ),.O(clock           ));	//  attribute LOC of ugbuftmb1x is "BUFGMUX0P"
+	BUFG ugbuftmb2x	(.I(clock_2x_dcm),.O(clock_2x        ));	// attribute LOC of ugbuftmb2x is "BUFGMUX2P"
 	
 // Main TMB DLL generates clocks at 1x=40MHz, 2x=80MHz, and 1/4 =10MHz
 	DCM udcmtmb (
@@ -355,7 +355,7 @@
 	end
 
 // Pipeline purge blanks pattern finder until pipes are cleared
-	reg [1:0] purge_sm;		// synthesis attribute safe_implementation of purge_sm is yes;
+	reg [1:0] purge_sm;		// attribute safe_implementation of purge_sm is yes;
 	parameter	pass	= 0;
 	parameter	purge	= 1;
 
@@ -811,7 +811,7 @@
 //
 //-------------------------------------------------------------------------------------------------------------------
 // Replicate logic accessible clock, serial logic takes 6 cycles to propagate, parallel logic is 10mhz slower
-	reg	[MXLY-1:0] sel;	//xsynthesis attribute equivalent_register_removal of sel is "no";
+	reg	[MXLY-1:0] sel;	// attribute equivalent_register_removal of sel is "no";
 
 	always @(posedge clock_2x)begin
 	sel[MXLY-1:0] <= {~sel[MXLY-2:0],~clock_lac};

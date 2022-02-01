@@ -390,7 +390,7 @@ NET "alct_rx<4>"	LOC = "R28";	# I/O_336
 NET "alct_rx<3>"	LOC = "T28";	# I/O_337
 NET "alct_rx<2>"	LOC = "T27";	# I/O_338
 NET "alct_rx<1>"	LOC = "V28";	# I/O_339
-NET "rpc_tx<3>"		LOC = "R27";	# I/O_340
+
 NET "alct_rxoe"		LOC = "R26";	# I/O_341#rpc_free0 was front_rear
 NET "alct_loop"		LOC = "V34";	# I/O_342
 NET "alct_txb<23>"	LOC = "V33";	# I/O_343
@@ -450,9 +450,9 @@ NET "rpc_rx<28>"	LOC = "AG31";	# I/O_396
 NET "rpc_rx<29>"	LOC = "AG32";	# I/O_397
 NET "rpc_rx<30>"	LOC = "AH29";	# I/O_398
 NET "rpc_rx<31>"	LOC = "AH32";	# I/O_399
-NET "rpc_tx<2>"		LOC = "AJ31";	# I/O_400 #rpc_looptm
-NET "rpc_tx<1>"		LOC = "AJ32";	# I/O_401 # rpc_posneg
-NET "rpc_tx<0>"		LOC = "AK31";	# I/O_402 # rpc_sync
+
+
+
 NET "mez_done"		LOC = "AL32";	# I/O_403
 NET "_mpc_tx<27>"	LOC = "AM28";	# I/O_404
 NET "_mpc_tx<28>"	LOC = "AM29";	# I/O_405
@@ -658,7 +658,7 @@ NET "_mpc_tx<*>"			SLEW=FAST;	#revert to 12mA default 10/06/05
 
 # RPC
 NET "rpc_loop"				SLEW=FAST | DRIVE=4;
-NET "rpc_tx<*>"				SLEW=FAST | DRIVE=4;
+
 
 # CCB
 NET "_ccb_tx<*>"			SLEW=FAST | DRIVE=4;

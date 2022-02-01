@@ -332,8 +332,9 @@
 	rpc_smbrx,
 	rpc_dsn,
 	rpc_loop,
-	rpc_tx,
+// JGedit, comment out rpc:	rpc_tx,
 
+	 
 // CCB
 	_ccb_rx,
 	_ccb_tx,
@@ -480,6 +481,7 @@
 	parameter MXMPCDLY		=	4;				// MPC delay time bits
 
 // RPC Constants
+   // JGedit: does not work as 0, leave as 2...
 	parameter MXRPC			=	2;				// Number RPCs
 	parameter MXRPCB		=	1;				// Number RPC ID bits
 	parameter MXRPCPAD		=	16;				// Number RPC pads per link board
@@ -526,7 +528,7 @@
 	input			rpc_smbrx;	// was rpc_rxalt[0]
 	input			rpc_dsn;	// was rpc_rxalt[1]	
 	output			rpc_loop;
-	output	[3:0]	rpc_tx;
+// JGedit, comment out rpc:	output	[3:0]	rpc_tx;
 
 // CCB
 	input	[50:0]	_ccb_rx;
@@ -2223,6 +2225,8 @@
 // Status
 	wire	[4:0]			parity_err_rpc;					// Raw hits RAM parity error detected
 
+
+/* JGedit, comment out module rpc call: 
 	rpc	urpc
 	(
 // RAT Module Signals
@@ -2300,6 +2304,9 @@
 // Sump
 	.rpc_sump				(rpc_sump)						// Out	Unused signals
 	);
+*/
+
+
 
 //-------------------------------------------------------------------------------------------------------------------
 //	Miniscope Instantiation
@@ -2311,7 +2318,7 @@
 
 	assign fifo_wadr_mini = fifo_wadr-wr_mini_offset;			// FIFO RAM read tbin address
 
-	miniscope uminiscope
+/* KSedit comment out miniscope module	miniscope uminiscope
 	(
 // Clock
 	.clock					(clock),							// In	40MHz TMB main
@@ -2330,6 +2337,7 @@
 // Sump
 	.mini_sump				(mini_sump)							// Out	Unused signals
 	);
+*/
 
 //-------------------------------------------------------------------------------------------------------------------
 //	Buffer Write Control Instantiation:	Controls CLCT + RPC raw hits RAM write-mode logic
@@ -2719,10 +2727,11 @@
 	gp_io_[3]	<= 1'bz;
 	end
 	else begin
-	gp_io_[0]	<= rat_sn_out;				// Out	RAT dsn for debug		jtag_fgpa0 tdo (out) shunted to gp_io1, usually
-	gp_io_[1]	<= alct_crc_err_tp;			// Out	CRC Error test point	jtag_fpga1 tdi (in) 
-	gp_io_[2]	<= alct_vpf_tp;				// Out	Timing test point		jtag_fpga2 tms (in)
-	gp_io_[3]	<= clct_window_tp;			// Out	Timing test point		jtag_fpga3 tck (in)
+//JGedit, gotta remove rpc_sn_out...	gp_io_[0]	<= rat_sn_out;
+	gp_io_[0]	<= 1;			// Out	RAT dsn for debug		jtag_fgpa0 tdo (out) shunted to gp_io1, usually
+	gp_io_[1]	<= alct_crc_err_tp;	// Out	CRC Error test point	jtag_fpga1 tdi (in) 
+	gp_io_[2]	<= alct_vpf_tp;		// Out	Timing test point		jtag_fpga2 tms (in)
+	gp_io_[3]	<= clct_window_tp;	// Out	Timing test point		jtag_fpga3 tck (in)
 	end
 	end
 
@@ -2942,7 +2951,7 @@
 	.mez_sn					(mez_sn),						// Bi	Mezzanine serial number
 	.tmb_sn					(tmb_sn),						// Bi	TMB serial number
 	.rpc_dsn				(rpc_dsn),						// In	RAT serial number, in  = rpc_dsn;
-	.rat_sn_out				(rat_sn_out),					// Out	RAT serial number, out = rpc_posneg
+//JGedit, gotta remove rpc_sn_out...	.rat_sn_out				(rat_sn_out),					// Out	RAT serial number, out = rpc_posneg
 	.rat_dsn_en				(rat_dsn_en),					// Out	RAT dsn enable
 
 // Clock DCM lock status
@@ -3626,8 +3635,11 @@
 //-------------------------------------------------------------------------------------------------------------------
 // Unused Signal Sump
 //-------------------------------------------------------------------------------------------------------------------
-	assign sump = ccb_sump | alct_sump |   rpc_sump   | sequencer_sump | tmb_sump | buf_sump	|
-	vme_sump | rpc_inj_sel | mini_sump | (|cfeb_sump) | inj_ram_sump   | clock_ctrl_sump;
+// JGedit, gotta remove rpc_sump...	assign sump = ccb_sump | alct_sump |   rpc_sump   | sequencer_sump | tmb_sump | buf_sump	|
+// KSedit remove mini_sump was    assign sump = ccb_sump | alct_sump | sequencer_sump | tmb_sump | buf_sump	|
+//	vme_sump | rpc_inj_sel | mini_sump | (|cfeb_sump) | inj_ram_sump   | clock_ctrl_sump;
+	assign sump = ccb_sump | alct_sump | sequencer_sump | tmb_sump | buf_sump	|
+	vme_sump | rpc_inj_sel | (|cfeb_sump) | inj_ram_sump   | clock_ctrl_sump;
 
 //-------------------------------------------------------------------------------------------------------------------
 	endmodule
