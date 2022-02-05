@@ -1591,11 +1591,11 @@
 
 	wire [MXTBIN-1:0]		fifo_tbins_cfeb;		// Number FIFO time bins to read out
 	wire [MXTBIN-1:0]		fifo_tbins_rpc;			// Number FIFO time bins to read out
-	wire [MXTBIN-1:0]		fifo_tbins_mini;		// Number FIFO time bins to read out
+	//wire [MXTBIN-1:0]		fifo_tbins_mini;		// Number FIFO time bins to read out
 
 	wire [MXTBIN-1:0]		fifo_pretrig_cfeb;		// Number FIFO time bins before pretrigger
 	wire [MXTBIN-1:0]		fifo_pretrig_rpc;		// Number FIFO time bins before pretrigger
-	wire [MXTBIN-1:0]		fifo_pretrig_mini;		// Number FIFO time bins before pretrigger
+	//wire [MXTBIN-1:0]		fifo_pretrig_mini;		// Number FIFO time bins before pretrigger
 
 	wire [MXBADR-1:0]		buf_pop_adr;			// Address of read buffer to release
 	wire [MXBADR-1:0]		buf_push_adr;			// Address of write buffer to allocate	
@@ -1637,10 +1637,10 @@
 	wire	[15:0]			scp_rdata;
 
 // Miniscope
-	wire	[RAM_WIDTH*2-1:0]	mini_rdata;			// FIFO dump miniscope
-	wire	[RAM_WIDTH*2-1:0]	fifo_wdata_mini;	// FIFO RAM write data
-	wire	[RAM_ADRB-1:0]		rd_mini_offset;		// RAM address rd_fifo_adr offset for miniscope read out
-	wire	[RAM_ADRB-1:0]		wr_mini_offset;		// RAM address offset for miniscope write
+	//wire	[RAM_WIDTH*2-1:0]	mini_rdata;			// FIFO dump miniscope
+	//wire	[RAM_WIDTH*2-1:0]	fifo_wdata_mini;	// FIFO RAM write data
+	//wire	[RAM_ADRB-1:0]		rd_mini_offset;		// RAM address rd_fifo_adr offset for miniscope read out
+	//wire	[RAM_ADRB-1:0]		wr_mini_offset;		// RAM address offset for miniscope write
 
 // Blockedbits
 	wire	[MXCFEB-1:0]	rd_list_bcb;			// List of CFEBs to read out
@@ -2074,18 +2074,18 @@
 	.scp_rdata				(scp_rdata[15:0]),				// Out	Recorded channel data
 
 // Miniscope
-	.mini_read_enable		(mini_read_enable),					// In	Enable Miniscope readout
-	.mini_fifo_busy			(mini_fifo_busy),					// In	Readout busy sending data to sequencer, goes down 1bx early
-	.mini_first_frame		(mini_first_frame),					// In	First frame valid 2bx after rd_start
-	.mini_last_frame		(mini_last_frame),					// In	Last frame valid 1bx after busy goes down
-	.mini_rdata				(mini_rdata[RAM_WIDTH*2-1:0]),		// In	FIFO dump miniscope
-	.fifo_wdata_mini		(fifo_wdata_mini[RAM_WIDTH*2-1:0]),	// Out	Miniscope FIFO RAM write data
-	.wr_mini_offset			(wr_mini_offset[RAM_ADRB-1:0]),		// Out	RAM address offset for miniscope write
+	//.mini_read_enable		(mini_read_enable),					// In	Enable Miniscope readout
+	//.mini_fifo_busy			(mini_fifo_busy),					// In	Readout busy sending data to sequencer, goes down 1bx early
+	//.mini_first_frame		(mini_first_frame),					// In	First frame valid 2bx after rd_start
+	//.mini_last_frame		(mini_last_frame),					// In	Last frame valid 1bx after busy goes down
+	//.mini_rdata				(mini_rdata[RAM_WIDTH*2-1:0]),		// In	FIFO dump miniscope
+	//.fifo_wdata_mini		(fifo_wdata_mini[RAM_WIDTH*2-1:0]),	// Out	Miniscope FIFO RAM write data
+	//.wr_mini_offset			(wr_mini_offset[RAM_ADRB-1:0]),		// Out	RAM address offset for miniscope write
 
 // Mini Sequencer Readout Control
-	.rd_start_mini			(rd_start_mini),					// Out	Start readout sequence
-	.rd_abort_mini			(rd_abort_mini),					// Out	Cancel readout
-	.rd_mini_offset			(rd_mini_offset[RAM_ADRB-1:0]),		// Out	RAM address rd_fifo_adr offset for miniscope read out
+	//.rd_start_mini			(rd_start_mini),					// Out	Start readout sequence
+	//.rd_abort_mini			(rd_abort_mini),					// Out	Cancel readout
+	//.rd_mini_offset			(rd_mini_offset[RAM_ADRB-1:0]),		// Out	RAM address rd_fifo_adr offset for miniscope read out
 
 // Trigger/Readout Counters
 	.cnt_all_reset			(cnt_all_reset),					// In	Trigger/Readout counter reset
@@ -2174,7 +2174,7 @@
 	.perr_pulse				(perr_pulse),						// In	Parity error pulse for counting
 	.perr_cfeb_ff			(perr_cfeb_ff[MXCFEB-1:0]),			// In	CFEB RAM parity error, latched
 	.perr_rpc_ff			(perr_rpc_ff),						// In	RPC  RAM parity error, latched
-	.perr_mini_ff			(perr_mini_ff),						// In	Mini RAM parity error, latched
+	//.perr_mini_ff			(perr_mini_ff),						// In	Mini RAM parity error, latched
 	.perr_ff				(perr_ff),							// In	Parity error summary,  latched
 
 // VME debug register latches
@@ -2307,37 +2307,35 @@
 */
 
 
-
 //-------------------------------------------------------------------------------------------------------------------
 //	Miniscope Instantiation
 //-------------------------------------------------------------------------------------------------------------------
-	wire	[RAM_ADRB-1:0]		fifo_wadr_mini;					// FIFO RAM write tbin address
-	wire	[RAM_ADRB-1:0]		fifo_radr_mini;					// FIFO RAM read tbin address
-	wire	[RAM_WIDTH*2-1:0]	fifo_rdata_mini;				// FIFO RAM read data
-	wire	[1:0]				parity_err_mini;				// Miniscope RAM parity error detected
+	//wire	[RAM_ADRB-1:0]		fifo_wadr_mini;					// FIFO RAM write tbin address
+	//wire	[RAM_ADRB-1:0]		fifo_radr_mini;					// FIFO RAM read tbin address
+	//wire	[RAM_WIDTH*2-1:0]	fifo_rdata_mini;				// FIFO RAM read data
+	//wire	[1:0]				parity_err_mini;				// Miniscope RAM parity error detected
 
-	assign fifo_wadr_mini = fifo_wadr-wr_mini_offset;			// FIFO RAM read tbin address
+	//assign fifo_wadr_mini = fifo_wadr-wr_mini_offset;			// FIFO RAM read tbin address
 
-/* KSedit comment out miniscope module	miniscope uminiscope
-	(
+//	miniscope uminiscope
+//	(
 // Clock
-	.clock					(clock),							// In	40MHz TMB main
-
+//	.clock					(clock),							// In	40MHz TMB main
+//
 // Raw Hits FIFO RAM Ports
-	.fifo_wen				(fifo_wen),							// In	1=Write enable FIFO RAM
-	.fifo_wadr_mini			(fifo_wadr_mini[RAM_ADRB-1:0]),		// In	FIFO RAM write address
-	.fifo_radr_mini			(fifo_radr_mini[RAM_ADRB-1:0]),		// In	FIFO RAM read address
-	.fifo_wdata_mini		(fifo_wdata_mini[RAM_WIDTH*2-1:0]),	// In	FIFO RAM write data
-	.fifo_rdata_mini		(fifo_rdata_mini[RAM_WIDTH*2-1:0]),	// Out	FIFO RAM read data
+//	.fifo_wen				(fifo_wen),							// In	1=Write enable FIFO RAM
+//	.fifo_wadr_mini			(fifo_wadr_mini[RAM_ADRB-1:0]),		// In	FIFO RAM write address
+//	.fifo_radr_mini			(fifo_radr_mini[RAM_ADRB-1:0]),		// In	FIFO RAM read address
+//	.fifo_wdata_mini		(fifo_wdata_mini[RAM_WIDTH*2-1:0]),	// In	FIFO RAM write data
+//	.fifo_rdata_mini		(fifo_rdata_mini[RAM_WIDTH*2-1:0]),	// Out	FIFO RAM read data
 
 // Status Ports
-	.mini_tbins_test		(mini_tbins_test),					// In	Miniscope data=address for testing
-	.parity_err_mini		(parity_err_mini[1:0]),				// Out	Miniscope RAM parity error detected
+//	.mini_tbins_test		(mini_tbins_test),					// In	Miniscope data=address for testing
+//	.parity_err_mini		(parity_err_mini[1:0]),				// Out	Miniscope RAM parity error detected
 
 // Sump
-	.mini_sump				(mini_sump)							// Out	Unused signals
-	);
-*/
+//	.mini_sump				(mini_sump)							// Out	Unused signals
+//	);
 
 //-------------------------------------------------------------------------------------------------------------------
 //	Buffer Write Control Instantiation:	Controls CLCT + RPC raw hits RAM write-mode logic
@@ -2409,7 +2407,7 @@
 	.fifo_sel_rpc		(fifo_sel_rpc[0:0]),				// Out	FIFO RAM read slice address 0-1
 
 // Miniscpe FIFO RAM Ports
-	.fifo_radr_mini		(fifo_radr_mini[RAM_ADRB-1:0]),		// Out	FIFO RAM read address
+//	.fifo_radr_mini		(fifo_radr_mini[RAM_ADRB-1:0]),		// Out	FIFO RAM read address
 
 // CFEB Raw Hits Data Ports
 	.fifo0_rdata_cfeb	(fifo_rdata[0][RAM_WIDTH-1:0]),		// In	FIFO RAM read data
@@ -2430,7 +2428,7 @@
 	.fifo1_rdata_rpc	(fifo1_rdata_rpc[RAM_WIDTH-1+4:0]),	// In	FIFO RAM read data, rpc
 
 // Miniscope Data Ports
-	.fifo_rdata_mini	(fifo_rdata_mini[RAM_WIDTH*2-1:0]),	// In	FIFO RAM read data
+//	.fifo_rdata_mini	(fifo_rdata_mini[RAM_WIDTH*2-1:0]),	// In	FIFO RAM read data
 
 // CLCT VME Configuration Ports
 	.fifo_tbins_cfeb	(fifo_tbins_cfeb[MXTBIN-1:0]),		// In	Number CFEB FIFO time bins to read out
@@ -2441,9 +2439,9 @@
 	.fifo_pretrig_rpc	(fifo_pretrig_rpc[MXTBIN-1:0]),		// In	Number RPC  FIFO time bins before pretrigger
 
 // Minisocpe VME Configuration Ports
-	.mini_tbins_word	(mini_tbins_word),					// In	Insert tbins and pretrig tbins in 1st word
-	.fifo_tbins_mini	(fifo_tbins_mini[MXTBIN-1:0]),		// In	Number Mini FIFO time bins to read out
-	.fifo_pretrig_mini	(fifo_pretrig_mini[MXTBIN-1:0]),	// In	Number Mini FIFO time bins before pretrigger
+//	.mini_tbins_word	(mini_tbins_word),					// In	Insert tbins and pretrig tbins in 1st word
+//	.fifo_tbins_mini	(fifo_tbins_mini[MXTBIN-1:0]),		// In	Number Mini FIFO time bins to read out
+//	.fifo_pretrig_mini	(fifo_pretrig_mini[MXTBIN-1:0]),	// In	Number Mini FIFO time bins before pretrigger
 
 // CFEB Sequencer Readout Control
 	.rd_start_cfeb		(rd_start_cfeb),					// In	Initiates a FIFO readout
@@ -2466,9 +2464,9 @@
 	.rd_rpc_offset		(rd_rpc_offset[RAM_ADRB-1:0]),		// In	RAM address rd_fifo_adr offset for rpc read out
 
 // Mini Sequencer Readout Control
-	.rd_start_mini		(rd_start_mini),					// In	Start readout sequence
-	.rd_abort_mini		(rd_abort_mini),					// In	Cancel readout
-	.rd_mini_offset		(rd_mini_offset[RAM_ADRB-1:0]),		// In	RAM address rd_fifo_adr offset for miniscope read out
+//	.rd_start_mini		(rd_start_mini),					// In	Start readout sequence
+//	.rd_abort_mini		(rd_abort_mini),					// In	Cancel readout
+//	.rd_mini_offset		(rd_mini_offset[RAM_ADRB-1:0]),		// In	RAM address rd_fifo_adr offset for miniscope read out
 
 // CFEB Sequencer Frame Output
 	.cfeb_first_frame	(cfeb_first_frame),					// Out	First frame valid 2bx after rd_start
@@ -2491,13 +2489,13 @@
 	.rpc_adr			(rpc_adr[MXRPCB-1:0]),				// Out	FIFO dump RPC ID
 	.rpc_tbinbxn		(rpc_tbinbxn[MXTBIN-1:0]),			// Out	FIFO dump RPC tbin or bxn for DMB
 	.rpc_rawhits		(rpc_rawhits[7:0]),					// Out	FIFO dump RPC pad hits, 8 of 16 per cycle
-	.rpc_fifo_busy		(rpc_fifo_busy),					// Out	Readout busy sending data to sequencer, goes down 1bx early
+	.rpc_fifo_busy		(rpc_fifo_busy)					// Out	Readout busy sending data to sequencer, goes down 1bx early
 
 // Mini Sequencer Frame Output
-	.mini_first_frame	(mini_first_frame),					// Out	First frame valid 2bx after rd_start
-	.mini_last_frame	(mini_last_frame),					// Out	Last frame valid 1bx after busy goes down
-	.mini_rdata			(mini_rdata[RAM_WIDTH*2-1:0]),		// Out	FIFO dump miniscope
-	.mini_fifo_busy		(mini_fifo_busy)					// Out	Readout busy sending data to sequencer, goes down 1bx early
+//	.mini_first_frame	(mini_first_frame),					// Out	First frame valid 2bx after rd_start
+//	.mini_last_frame	(mini_last_frame),					// Out	Last frame valid 1bx after busy goes down
+//	.mini_rdata			(mini_rdata[RAM_WIDTH*2-1:0]),		// Out	FIFO dump miniscope
+//	.mini_fifo_busy		(mini_fifo_busy)					// Out	Readout busy sending data to sequencer, goes down 1bx early
 	);
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -2517,7 +2515,7 @@
 	.parity_err_cfeb3	(parity_err_cfeb[3][MXLY-1:0]),	// In	CFEB raw hits RAM parity errors
 	.parity_err_cfeb4	(parity_err_cfeb[4][MXLY-1:0]),	// In	CFEB raw hits RAM parity errors
 	.parity_err_rpc		(parity_err_rpc[4:0]),			// In	RPC  raw hits RAM parity errors
-	.parity_err_mini	(parity_err_mini[1:0]),			// In	Miniscope     RAM parity errors
+//	.parity_err_mini	(parity_err_mini[1:0]),			// In	Miniscope     RAM parity errors
 
 // Raw hits RAM control
 	.fifo_wen			(fifo_wen),						// In	1=Write enable FIFO RAM
@@ -2525,13 +2523,13 @@
 // Parity summary to VME
 	.perr_cfeb			(perr_cfeb[MXCFEB-1:0]),		// Out	CFEB RAM parity error
 	.perr_rpc			(perr_rpc),						// Out	RPC  RAM parity error
-	.perr_mini			(perr_mini),					// Out	Mini RAM parity error
+//	.perr_mini			(perr_mini),					// Out	Mini RAM parity error
 	.perr_en			(perr_en),						// Out	Parity error latch enabled
 	.perr				(perr),							// Out	Parity error summary		
 	.perr_pulse			(perr_pulse),					// Out	Parity error pulse for counting
 	.perr_cfeb_ff		(perr_cfeb_ff[MXCFEB-1:0]),		// Out	CFEB RAM parity error, latched
 	.perr_rpc_ff		(perr_rpc_ff),					// Out	RPC  RAM parity error, latched
-	.perr_mini_ff		(perr_mini_ff),					// Out	Mini RAM parity error, latched
+//	.perr_mini_ff		(perr_mini_ff),					// Out	Mini RAM parity error, latched
 	.perr_ff			(perr_ff),						// Out	Parity error summary,  latched
 	.perr_ram_ff		(perr_ram_ff[48:0])				// Out	Mapped bad parity RAMs, 30 cfebs, 5 rpcs, 2 miniscope
 	);
@@ -3324,11 +3322,11 @@
 	.scp_rdata				(scp_rdata[15:0]),				// In	Recorded channel data
 
 //  Sequencer Ports: Miniscope
-	.mini_read_enable		(mini_read_enable),				// Out	Enable Miniscope readout
-	.mini_tbins_test		(mini_tbins_test),				// Out	Miniscope data=address for testing
-	.mini_tbins_word		(mini_tbins_word),				// Out	Insert tbins and pretrig tbins in 1st word
-	.fifo_tbins_mini		(fifo_tbins_mini[MXTBIN-1:0]),	// Out	Number Mini FIFO time bins to read out
-	.fifo_pretrig_mini		(fifo_pretrig_mini[MXTBIN-1:0]),// Out	Number Mini FIFO time bins before pretrigger
+//	.mini_read_enable		(mini_read_enable),				// Out	Enable Miniscope readout
+//	.mini_tbins_test		(mini_tbins_test),				// Out	Miniscope data=address for testing
+//	.mini_tbins_word		(mini_tbins_word),				// Out	Insert tbins and pretrig tbins in 1st word
+//	.fifo_tbins_mini		(fifo_tbins_mini[MXTBIN-1:0]),	// Out	Number Mini FIFO time bins to read out
+//	.fifo_pretrig_mini		(fifo_pretrig_mini[MXTBIN-1:0]),// Out	Number Mini FIFO time bins before pretrigger
 
 // TMB Ports: Configuration
 	.alct_delay				(alct_delay[3:0]),				// Out	Delay ALCT for CLCT match window
@@ -3553,12 +3551,12 @@
 	.perr_reset				(perr_reset),						// Out	Reset parity errors
 	.perr_cfeb				(perr_cfeb[MXCFEB-1:0]),			// In	CFEB RAM parity error
 	.perr_rpc				(perr_rpc),							// In	RPC  RAM parity error
-	.perr_mini				(perr_mini),						// In	Mini RAM parity error
+//	.perr_mini				(perr_mini),						// In	Mini RAM parity error
 	.perr_en				(perr_en),							// In	Parity error latch enabled
 	.perr					(perr),								// In	Parity error summary		
 	.perr_cfeb_ff			(perr_cfeb_ff[MXCFEB-1:0]),			// In	CFEB RAM parity error, latched
 	.perr_rpc_ff			(perr_rpc_ff),						// In	RPC  RAM parity error, latched
-	.perr_mini_ff			(perr_mini_ff),						// In	Mini RAM parity error, latched
+//	.perr_mini_ff			(perr_mini_ff),						// In	Mini RAM parity error, latched
 	.perr_ff				(perr_ff),							// In	Parity error summary,  latched
 	.perr_ram_ff			(perr_ram_ff[48:0]),				// In	Mapped bad parity RAMs, 30 cfebs, 5 rpcs, 2 miniscope
 
@@ -3636,8 +3634,6 @@
 // Unused Signal Sump
 //-------------------------------------------------------------------------------------------------------------------
 // JGedit, gotta remove rpc_sump...	assign sump = ccb_sump | alct_sump |   rpc_sump   | sequencer_sump | tmb_sump | buf_sump	|
-// KSedit remove mini_sump was    assign sump = ccb_sump | alct_sump | sequencer_sump | tmb_sump | buf_sump	|
-//	vme_sump | rpc_inj_sel | mini_sump | (|cfeb_sump) | inj_ram_sump   | clock_ctrl_sump;
 	assign sump = ccb_sump | alct_sump | sequencer_sump | tmb_sump | buf_sump	|
 	vme_sump | rpc_inj_sel | (|cfeb_sump) | inj_ram_sump   | clock_ctrl_sump;
 
