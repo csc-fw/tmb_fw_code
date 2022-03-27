@@ -1433,9 +1433,10 @@
 
    wire ccLUT_enable;
    assign ccLUT_enable = reg_ccLUT_enable;
-   wire run3_trig_df   = reg_ccLUT_enable; // Run3 trigger data format
-   wire run3_daq_df    = reg_ccLUT_enable;// Run3 daq data format
-   wire run3_alct_df = reg_ccLUT_enable;
+   wire run3_trig_df ;//  = reg_ccLUT_enable; // Run3 trigger data format
+   wire run3_daq_df  ;//  = reg_ccLUT_enable;// Run3 daq data format
+   wire run3_alct_df ;//= reg_ccLUT_enable;
+   
 
 
 	wire	[MXCFEB-1:0]	cfeb_hit;						// This CFEB has a pattern over pre-trigger threshold
@@ -3280,8 +3281,9 @@
 	.adjcfeb_dist			(adjcfeb_dist[MXKEYB-1+1:0]),		// Out	Distance from key to cfeb boundary for marking adjacent cfeb as hit
     ////Enable CCLUT or not
         .ccLUT_enable       (ccLUT_enable),  // In
-    //.run3_trig_df       (run3_trig_df), // output, enable run3 trigger format or not
-    //.run3_daq_df        (run3_daq_df),  // output, enable run3 daq format or not
+      .run3_trig_df       (run3_trig_df), // output, enable run3 trigger format or not
+      .run3_daq_df        (run3_daq_df),  // output, enable run3 daq format or not
+      .run3_alct_df       (run3_alct_df),  // input, enable run3 daq format or not
 
 // CFEB Ports: Hot Channel Mask
 	.cfeb0_ly0_hcm			(cfeb_ly0_hcm[0][MXDS-1:0]),	// Out	1=enable DiStrip

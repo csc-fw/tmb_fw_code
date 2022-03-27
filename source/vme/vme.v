@@ -297,9 +297,10 @@
 
 
 	    ccLUT_enable,
-    //run3_trig_df,
-    //run3_daq_df,
-    //run3_alct_df,
+    run3_trig_df,
+    run3_daq_df,
+    run3_alct_df,
+    //run2_revcode,
 
 // CFEB Ports: Hot Channel Mask
 	cfeb0_ly0_hcm,
@@ -1194,6 +1195,7 @@
 
 	parameter ADR_V6_EXTEND				= 9'h17A;	// DCFEB 7-bit extensions
 
+    parameter ADR_RUN3_FORMAT_CTRL      = 10'h1AA; // control for CCLUT, data format
 //------------------------------------------------------------------------------------------------------------------
 // Ports
 //------------------------------------------------------------------------------------------------------------------
@@ -1481,12 +1483,10 @@
 	output	[MXKEYB-1+1:0]	adjcfeb_dist;			// Distance from key to cfeb boundary for marking adjacent cfeb as hit
 
 	    input ccLUT_enable; // In
-    //output run3_trig_df;
-    //output run3_daq_df;
-    //output run3_alct_df;
-  //output run2_revcode;
-  //wire run2_revcode = 1'b0;
-  //wire run3_daq_df = ccLUT_enable;
+    output run3_trig_df;
+    output run3_daq_df;
+    output run3_alct_df;
+    wire run2_revcode;//not an output
 
 // CFEB Ports: Hot Channel Mask
 	output	[MXDS-1:0]		cfeb0_ly0_hcm;			// 1=enable DiStrip
@@ -2437,6 +2437,8 @@
 	wire	[15:0]	alct_startup_delay_rd;
 	wire	[15:0]	alct_startup_status_rd;
 
+    reg  [15:0] run3_format_ctrl_wr;
+    wire [15:0] run3_format_ctrl_rd;
 //------------------------------------------------------------------------------------------------------------------
 // Address Write Decodes
 //------------------------------------------------------------------------------------------------------------------
@@ -2561,6 +2563,8 @@
 	wire			wr_alct_startup_delay;
 
 	wire			wr_adr_cap;
+  
+    wire      wr_run3_format_ctrl;
 
 //---------------------------------------------------------------------------------------------------------------------
 //	Power-up Section
@@ -2933,6 +2937,8 @@
 	ADR_CFEB4_BADBITS_LY23:		data_out <=	cfeb4_badbits_ly23_rd;
 	ADR_CFEB4_BADBITS_LY45:		data_out <=	cfeb4_badbits_ly45_rd;
 
+    ADR_RUN3_FORMAT_CTRL:       data_out <= run3_format_ctrl_rd;
+
 	ADR_ALCT_STARTUP_DELAY:		data_out <=	alct_startup_delay_rd;
 	ADR_ALCT_STARTUP_STATUS:	data_out <=	alct_startup_status_rd;
 	default:					data_out <= 16'hDEAF;
@@ -3063,6 +3069,8 @@
 
 	assign wr_cfeb_badbits_ctrl		= (reg_adr==ADR_CFEB_BADBITS_CTRL	&& clk_en);
 	assign wr_cfeb_badbits_nbx		= (reg_adr==ADR_CFEB_BADBITS_TIMER	&& clk_en);
+
+    assign wr_run3_format_ctrl      =  (reg_adr==ADR_RUN3_FORMAT_CTRL       && clk_en);
 
 	assign wr_alct_startup_delay	= (reg_adr==ADR_ALCT_STARTUP_DELAY	&& clk_en);
 	assign wr_adr_cap				= (                        			  adr_cap);
@@ -3227,13 +3235,13 @@
     assign revcode_vme_new [12:09] = VERSION_FORMAT;
     assign revcode_vme_new [15:13] = 3'd0;//all 0 for Run2 compatibility 
 
-    //wire run2_revcode_enable = run2_revcode && !run3_daq_df;//switch to Run2 legacy revision code
-    //wire [15:0] run2_legacy_revcode;//2016.04.14
-    //assign run2_legacy_revcode[8:0]    = 8'd142;//4*32 + 14
-    //assign run2_legacy_revcode[12:9]   = 4'h6 + 4'hA;
-    //assign run2_legacy_revcode[15:13]  = FPGAID[15:13];
-    //assign revcode[14:0]    = run2_revcode_enable ? run2_legacy_revcode[14:0] : ((ccLUT_enable) ? revcode_vme_new[14:0] : revcode_vme[14:0]);  // Sequencer format is 15 bits, VME is 16
-    assign revcode[14:0]    = revcode_vme_new[14:0];  // Sequencer format is 15 bits, VME is 16
+    wire run2_revcode_enable = run2_revcode && !run3_daq_df;//switch to Run2 legacy revision code
+    wire [15:0] run2_legacy_revcode;//2016.04.14
+    assign run2_legacy_revcode[8:0]    = 8'd142;//4*32 + 14
+    assign run2_legacy_revcode[12:9]   = 4'h6 + 4'hA;
+    assign run2_legacy_revcode[15:13]  = FPGAID[15:13];
+    assign revcode[14:0]    = run2_revcode_enable ? run2_legacy_revcode[14:0] : revcode_vme_new[14:0];  // Sequencer format is 15 bits, VME is 16
+    //assign revcode[14:0]    = revcode_vme_new[14:0];  // Sequencer format is 15 bits, VME is 16
 
 
 // VME ID Registers, Readonly
@@ -6224,6 +6232,33 @@
 	assign cfeb4_badbits_ly45_rd[15:0] = {cfeb4_ly5_badbits,cfeb4_ly4_badbits};
 
 //------------------------------------------------------------------------------------------------------------------
+// ADR_RUN3_FORMAT_CTRL = 0x1AA  CCLUT
+//------------------------------------------------------------------------------------------------------------------
+
+  initial begin
+    run3_format_ctrl_wr[0] = 1'b0;
+    run3_format_ctrl_wr[1] = 1'b1; // default, Run3 trigger format upgrade is off
+    run3_format_ctrl_wr[2] = 1'b1; // default, Run3 daq format upgrade is ON
+    run3_format_ctrl_wr[3] = 1'b0; // Run3 ALCT data format enable or not.  Run2 ALCT data format had HMT encoded
+    run3_format_ctrl_wr[4] = 1'b0; // use Run2 legacy revcode or not
+    run3_format_ctrl_wr[15:5] = 12'b0; // NOT used
+    //cclut_format_ctrl_wr[1] = 0; //CLCT pattern sorting, 0= use {pat, nhits}, 1={new quality}
+    //cclut_format_ctrl_wr[2] = 0; //LCT data format control, 0 = use Run2, 1= use Run3 with GEM-CSC+CCLUT
+  end
+  assign run3_trig_df = run3_format_ctrl_wr[1];
+  assign run3_daq_df  = run3_format_ctrl_wr[2];
+  assign run3_alct_df = run3_format_ctrl_wr[3];
+  assign run2_revcode = run3_format_ctrl_wr[4];
+
+  assign run3_format_ctrl_rd[0]    = ccLUT_enable;
+  assign run3_format_ctrl_rd[1]    = run3_trig_df ;//only enable it for CCLUT case
+  assign run3_format_ctrl_rd[2]    = run3_daq_df  ; 
+  assign run3_format_ctrl_rd[3]    = run3_alct_df ;
+  assign run3_format_ctrl_rd[4]    = run3_revcode ;
+  assign run3_format_ctrl_rd[15:5] = run3_format_ctrl_wr[15:5];
+      
+
+//------------------------------------------------------------------------------------------------------------------
 // ADR_ALCT_STARTUP_DELAY = 0x144 ALCT startup delay milliseconds for Spartan-6
 //------------------------------------------------------------------------------------------------------------------
 	initial begin
@@ -6352,6 +6387,7 @@
 	if (wr_sync_err_ctrl)			sync_err_ctrl_wr		<=	d[15:0];
 	if (wr_cfeb_badbits_ctrl)		cfeb_badbits_ctrl_wr	<=	d[15:0];
 	if (wr_cfeb_badbits_nbx)		cfeb_badbits_nbx_wr		<=	d[15:0];
+    if (wr_run3_format_ctrl)        run3_format_ctrl_wr     <= d[15:0];
 	if (wr_alct_startup_delay)		alct_startup_delay_wr	<=	d[15:0];
 	end
 
