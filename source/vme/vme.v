@@ -472,13 +472,13 @@
 	nlayers_hit_vme,
 	clct_bx0_sync_err,
 
-  clct0_vme_bnd,
-  clct0_vme_xky,
-  clct0_vme_carry,
+  //clct0_vme_bnd,
+  //clct0_vme_xky,
+  //clct0_vme_carry,
 
-  clct1_vme_bnd,
-  clct1_vme_xky,
-  clct1_vme_carry,
+  //clct1_vme_bnd,
+  //clct1_vme_xky,
+  //clct1_vme_carry,
 
 // Sequencer Ports: Raw Hits Ram
 	dmb_wr,
@@ -1661,12 +1661,12 @@
 	input	[2:0]			nlayers_hit_vme;		// Number layers hit on layer trigger
 	input					clct_bx0_sync_err;		// Sync error: BXN counter==0 did not match bx0
 
-	      input  [MXBNDB - 1   : 0] clct0_vme_bnd; // new bending 
-      input  [MXXKYB-1     : 0] clct0_vme_xky; // new position with 1/8 precision
-      input  [MXBNDB - 1   : 0] clct1_vme_bnd; // new bending 
-      input  [MXXKYB-1     : 0] clct1_vme_xky; // new position with 1/8 precision
-      input  [MXPATC-1     : 0] clct0_vme_carry;         // First  CLCT
-      input  [MXPATC-1     : 0] clct1_vme_carry;         // Second CLCT
+	//      input  [MXBNDB - 1   : 0] clct0_vme_bnd; // new bending 
+    //  input  [MXXKYB-1     : 0] clct0_vme_xky; // new position with 1/8 precision
+    //  input  [MXBNDB - 1   : 0] clct1_vme_bnd; // new bending 
+    //  input  [MXXKYB-1     : 0] clct1_vme_xky; // new position with 1/8 precision
+    //  input  [MXPATC-1     : 0] clct0_vme_carry;         // First  CLCT
+    //  input  [MXPATC-1     : 0] clct1_vme_carry;         // Second CLCT
 
 // Sequencer Ports: Raw Hits Ram
 	output					dmb_wr;					// Raw hits RAM VME write enable

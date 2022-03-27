@@ -571,11 +571,11 @@
 	bxn_clct_vme,
 	bxn_l1a_vme,
 
-  clct0_vme_bnd,
-  clct0_vme_xky,
+//  clct0_vme_bnd,
+//  clct0_vme_xky,
 
-  clct1_vme_bnd,
-  clct1_vme_xky,
+ // clct1_vme_bnd,
+ // clct1_vme_xky,
 	
 // RPC VME Configuration
 	rpc_exists,
@@ -1200,7 +1200,7 @@
 	input	[MXHITB-1:0]	hs_hit_1st;				// 1st CLCT pattern hits
 	input	[MXPIDB-1:0]	hs_pid_1st;				// 1st CLCT pattern ID
 	input	[MXKEYBX-1:0]	hs_key_1st;				// 1st CLCT key 1/2-strip
-        input [MXBNDB     - 1 : 0] hs_bnd_1st; // 1st CLCT pattern lookup bend angle
+      //  input [MXBNDB     - 1 : 0] hs_bnd_1st; // 1st CLCT pattern lookup bend angle
         //input [MXXKYB     - 1 : 0] hs_xky_1st; // 1st CLCT key 1/8-strip
         //input [MXPATC     - 1 : 0] hs_carry_1st; // 1st CLCT pattern lookup comparator-code
         //input  [MXPIDB-1:0]   hs_run2pid_1st;        // 1st CLCT pattern ID
@@ -2691,7 +2691,7 @@
 // Counter registers
 	parameter MNCNT			= 13;						// First sequencer counter, not number of counters beco they start at 7
 	//parameter MXCNT			= 65;						// Last  sequencer counter, not number of counters beco they end   at 51
-    parameter MXCNT           = 70// add counters for HMT
+    parameter MXCNT           = 70;// add counters for HMT
 	parameter RESYNCCNT_ID	= 61;						// TTC Resyncs received counter does not get cleared
 
 	reg	[MXCNTVME-1:0]	cnt [MXCNT:MNCNT];				// TMB counter array, counters[6:0] are in alct.v

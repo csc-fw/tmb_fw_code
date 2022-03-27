@@ -1424,7 +1424,7 @@
   wire  [MXPIDB-1:0]  hs_run2pid_2nd;
 
   reg reg_ccLUT_enable;
-  enable CCLUT, Tao
+  //enable CCLUT, Tao
   `ifdef CCLUT
   initial reg_ccLUT_enable = 1'b1;
   `else
@@ -1976,11 +1976,11 @@
 	.bxn_clct_vme			(bxn_clct_vme[MXBXN-1:0]),			// Out	CLCT BXN at pre-trigger
 	.bxn_l1a_vme			(bxn_l1a_vme[MXBXN-1:0]),			// Out	CLCT BXN at L1A
 
-  .clct0_vme_bnd   (clct0_vme_bnd[MXBNDB - 1   : 0]), // Out, clct0 new bending 
-  .clct0_vme_xky   (clct0_vme_xky[MXXKYB-1 : 0]),     // Out, clct0 new position with 1/8 strip resolution
+  //.clct0_vme_bnd   (clct0_vme_bnd[MXBNDB - 1   : 0]), // Out, clct0 new bending 
+ // .clct0_vme_xky   (clct0_vme_xky[MXXKYB-1 : 0]),     // Out, clct0 new position with 1/8 strip resolution
 
-  .clct1_vme_bnd   (clct1_vme_bnd[MXBNDB - 1   : 0]),  // out 
-  .clct1_vme_xky   (clct1_vme_xky[MXXKYB-1 : 0]),     // out
+ // .clct1_vme_bnd   (clct1_vme_bnd[MXBNDB - 1   : 0]),  // out 
+  //.clct1_vme_xky   (clct1_vme_xky[MXXKYB-1 : 0]),     // out
 // RPC VME Configuration Ports
 	.rpc_exists				(rpc_exists[MXRPC-1:0]),			// In	RPC Readout list
 	.rpc_read_enable		(rpc_read_enable),					// In	1 Enable RPC Readout
@@ -3456,10 +3456,10 @@
 
         //CCLUT, Tao
 
-      .clct0_vme_bnd   (clct0_vme_bnd[MXBNDB - 1   : 0]), // In clct0 new bending 
-      .clct0_vme_xky   (clct0_vme_xky[MXXKYB-1 : 0]),     // In clct0 new key position with 1/8 strip resolution
-      .clct1_vme_bnd   (clct1_vme_bnd[MXBNDB - 1   : 0]), // In 
-      .clct1_vme_xky   (clct1_vme_xky[MXXKYB-1 : 0]),    // IN 
+      //.clct0_vme_bnd   (clct0_vme_bnd[MXBNDB - 1   : 0]), // In clct0 new bending 
+      //.clct0_vme_xky   (clct0_vme_xky[MXXKYB-1 : 0]),     // In clct0 new key position with 1/8 strip resolution
+     // .clct1_vme_bnd   (clct1_vme_bnd[MXBNDB - 1   : 0]), // In 
+      //.clct1_vme_xky   (clct1_vme_xky[MXXKYB-1 : 0]),    // IN 
 
 // Sequencer Ports: Raw Hits Ram
 	.dmb_wr					(dmb_wr),							// Out	Raw hits RAM VME write enable
