@@ -126,6 +126,8 @@
 	alct_bx0_rx,
 	alct_ecc_err,
 
+    hmt_anode,
+
 // TMB-Sequencer Pipelines
 	wr_adr_xtmb,
 	wr_adr_rtmb,
@@ -143,7 +145,7 @@
 	wr_avail_rmpc,
 
 // Sequencer
-        hmt_trigger_xtmb,
+        //hmt_trigger_xtmb,
 	clct0_xtmb,
 	clct1_xtmb,
 	clctc_xtmb,
@@ -189,8 +191,12 @@
 	tmb_alct1,
 	tmb_alctb,
 	tmb_alcte,
+    hmt_anode_alct_match,//anode hmt and alct vpf match
+    tmb_pulse_hmt_only, //hmt trigger only 
+    tmb_keep_hmt_only ,//hmt readout only
    
 	run3_trig_df,
+	run3_alct_df,
 // MPC Status
 	mpc_frame_ff,
 	mpc0_frame0_ff,
@@ -435,7 +441,8 @@
         parameter MXPAT   = 5;                 // Number of patterns
         parameter MXHMTB     =  4;// bits for HMT
         parameter NHMTHITB   = 10;
-      parameter MXCCLUTB = MXBNDB+MXXKYB;
+      //parameter MXCCLUTB = MXBNDB+MXXKYB;
+      parameter MXCCLUTB = MXBNDB;
 		  
 //------------------------------------------------------------------------------------------------------------------
 //Ports
@@ -449,6 +456,8 @@
 	input	[MXALCT-1:0]	alct1_tmb;			// ALCT second best muon
 	input					alct_bx0_rx;		// ALCT bx0 received
 	input	[1:0]			alct_ecc_err;		// ALCT ecc syndrome code
+     
+    output [MXHMTB-1:0] hmt_anode;// anode hmt bits
 
 // TMB-Sequencer Pipelines
 	input	[MXBADR-1:0]	wr_adr_xtmb;		// Buffer write address after drift time
@@ -467,7 +476,7 @@
 	output					wr_avail_rmpc;		// Buffer available at MPC received
 
 // Sequencer
-        input  [MXHMTB-1:0]  hmt_trigger_xtmb;
+        //input  [MXHMTB-1:0]  hmt_trigger_xtmb;
 	input	[MXCLCT-1:0]	clct0_xtmb;			// First  CLCT
 	input	[MXCLCT-1:0]	clct1_xtmb;			// Second CLCT
 	input	[MXCLCTC-1:0]	clctc_xtmb;			// Common to CLCT0/1 to TMB
@@ -513,6 +522,9 @@
 	output	[4:0]			tmb_alctb;			// ALCT bxn latched at trigger
 	output	[1:0]			tmb_alcte;			// ALCT ecc error syndrome latched at trigger
    
+    output                  hmt_anode_alct_match;//anode hmt and alct vpf match
+    output                  tmb_pulse_hmt_only; //hmt trigger only 
+    output                  tmb_keep_hmt_only ;//hmt readout only
 	
 // MPC Status
 	output					mpc_frame_ff;		// MPC frame latch
@@ -731,6 +743,7 @@
 //  Run3 data format
 //------------------------------------------------------------------------------------------------------------------
   input run3_trig_df; // flag of run3 trigger data format
+  input run3_alct_df; // flag of run3 trigger data format
 
 `ifdef DEBUG_MPC
 	output					mpc_debug_mode;		// Prevents accidental compile with debug_mpc turned on
@@ -832,6 +845,19 @@
 	wire   alct0_pipe_vpf = alct0_pipe[0];
 	wire   alct1_pipe_vpf = alct1_pipe[0];
 
+    wire anode_hmt_fired_pipe   = run3_alct_df ? |alct0_pipe[13:12] : 1'b0;
+    //wire [1:0] anode_intime_hmt = run3_alct_df ? (alct0_pipe[13:12] & {2{hmt_enable}}) : 2'b00;
+    wire [1:0] anode_intime_hmt = run3_alct_df ? alct0_pipe[13:12] : 2'b00;
+  
+    reg [1:0] hmt_anode_pipe [2:0];
+    always @(posedge clock) begin
+        hmt_anode_pipe[0] <= anode_intime_hmt;
+        hmt_anode_pipe[1] <= hmt_anode_pipe[0] ;
+        hmt_anode_pipe[2] <= hmt_anode_pipe[1] ;
+    end
+  
+    assign hmt_anode = {hmt_anode_pipe[2][1:0], anode_intime_hmt};
+
 //------------------------------------------------------------------------------------------------------------------
 // Push CLCT data into a 1bx to 16bx pipeline delay to wait for an alct match
 //------------------------------------------------------------------------------------------------------------------
@@ -842,12 +868,12 @@
 	wire [MXBADR-1:0]	wr_adr_xtmb_pipe, wr_adr_xtmb_srl;	// Buffer write address after clct pipeline delay
 	wire [3:0]			clct_srl_ptr;
 
-      wire [MXCCLUTB-1  : 0]  clct0_cclut_xtmb = {clct0_bnd_xtmb, clct0_xky_xtmb};
-      wire [MXCCLUTB-1  : 0]  clct1_cclut_xtmb = {clct1_bnd_xtmb, clct1_xky_xtmb};
+      wire [MXCCLUTB-1  : 0]  clct0_cclut_xtmb = {clct0_bnd_xtmb};
+      wire [MXCCLUTB-1  : 0]  clct1_cclut_xtmb = {clct1_bnd_xtmb};
       wire [MXCCLUTB-1  : 0]  clct0_cclut_pipe, clct0_cclut_srl;
       wire [MXCCLUTB-1  : 0]  clct1_cclut_pipe, clct1_cclut_srl;
 
-      wire [MXHMTB-1    :0] hmt_trigger_pipe,hmt_trigger_srl;
+      //wire [MXHMTB-1    :0] hmt_trigger_pipe,hmt_trigger_srl;
 
 
 	wire [3:0] clct_srl_adr = clct_srl_ptr-1;				// Pointer to clct SRL data accounts for SLR 1bx latency
@@ -863,7 +889,7 @@
       //register shift for CCLUT
       srl16e_bbl #(MXCCLUTB ) uclct0cclut (.clock(clock),.ce(1'b1),.adr(clct_srl_adr),.d(clct0_cclut_xtmb),.q(clct0_cclut_srl));
       srl16e_bbl #(MXCCLUTB ) uclct1cclut (.clock(clock),.ce(1'b1),.adr(clct_srl_adr),.d(clct1_cclut_xtmb),.q(clct1_cclut_srl));
-      srl16e_bbl #(MXHMTB   ) uhmt        (.clock(clock),.ce(1'b1),.adr(clct_srl_adr),.d(hmt_trigger_xtmb),.q(hmt_trigger_srl));
+      //srl16e_bbl #(MXHMTB   ) uhmt        (.clock(clock),.ce(1'b1),.adr(clct_srl_adr),.d(hmt_trigger_xtmb),.q(hmt_trigger_srl));
 
 	wire clct_ptr_is_0 = (clct_srl_ptr == 0);				 		// Use direct input if SRL address is 0, 1st SRL output has 1bx overhead
 
@@ -878,7 +904,7 @@
 
       assign clct0_cclut_pipe   = (clct_ptr_is_0) ? clct0_cclut_xtmb : clct0_cclut_srl;
       assign clct1_cclut_pipe   = (clct_ptr_is_0) ? clct1_cclut_xtmb : clct1_cclut_srl;
-      assign hmt_trigger_pipe   = (clct_ptr_is_0) ? hmt_trigger_xtmb : hmt_trigger_srl;
+      //assign hmt_trigger_pipe   = (clct_ptr_is_0) ? hmt_trigger_xtmb : hmt_trigger_srl;
 
       wire  [MXBNDB - 1   : 0] clct0_bnd_pipe; // new bending
       wire  [MXXKYB-1     : 0] clct0_xky_pipe; // new position with 1/8 precision
@@ -887,8 +913,8 @@
       wire  [MXBNDB - 1   : 0] clct1_bnd_pipe; // new bending
       wire  [MXXKYB-1     : 0] clct1_xky_pipe; // new position with 1/8 precision
 
-      assign {clct0_bnd_pipe, clct0_xky_pipe} = clct0_cclut_pipe;
-      assign {clct1_bnd_pipe, clct1_xky_pipe} = clct1_cclut_pipe;
+      assign {clct0_bnd_pipe} = clct0_cclut_pipe;
+      assign {clct1_bnd_pipe} = clct1_cclut_pipe;
 
 //------------------------------------------------------------------------------------------------------------------
 // Pre-calculate dynamic clct window parameters
@@ -1130,10 +1156,18 @@
 	reg [ 4:0]	tmb_alctb    = 0;								// ALCT bxn latched at trigger
 	reg	[ 1:0]	tmb_alcte    = 0;								// ALCT ecc latched at trigger
 
+    wire   hmt_fired_only = anode_hmt_fired_pipe  && !trig_pulse;
+    assign hmt_anode_alct_match = anode_hmt_fired_pipe && alct0_pipe_vpf;
+    reg tmb_pulse_hmt_only = 0;
+    reg tmb_keep_hmt_only  = 0;
+
 	always @(posedge clock) begin
-	tmb_trig_pulse		<= trig_pulse;							// ALCT or CLCT or both triggered
-	tmb_trig_keep_ff	<= trig_keep;							// ALCT or CLCT or both triggered, and trigger is allowed
-	tmb_non_trig_keep_ff<= non_trig_keep;						// Event did not trigger but is kept for readout
+    tmb_pulse_hmt_only   <= anode_hmt_fired_pipe && !trig_pulse;
+    tmb_keep_hmt_only    <= anode_hmt_fired_pipe && !trig_keep;
+
+	tmb_trig_pulse		<= trig_pulse || anode_hmt_fired_pipe;							// ALCT or CLCT or both triggered
+	tmb_trig_keep_ff	<= trig_keep  || anode_hmt_fired_pipe;							// ALCT or CLCT or both triggered, and trigger is allowed
+	tmb_non_trig_keep_ff<= non_trig_keep || anode_hmt_fired_pipe;						// Event did not trigger but is kept for readout
 
 	tmb_match			<= clct_match_tr  && tmb_allow_match;	// ALCT and CLCT matched in time
 	tmb_alct_only		<= alct_noclct_tr && tmb_allow_alct;	// Only ALCT triggered
@@ -1145,7 +1179,7 @@
 
 	tmb_match_win		<= match_win;							// Location of alct in clct window
 	tmb_match_pri		<= clct_pri_best;						// Priority of clct that matched
-	tmb_aff_list		<= clctf_pipe;							// Active feb pipe
+	tmb_aff_list		<= clctf_pipe | ({MXCFEB{hmt_fired_only}});							// Active feb pipe
 
 	tmb_alct_discard	<= alct_discard;						// ALCT was not used for LCT
 	tmb_clct_discard	<= clct_discard;						// CLCT was not used for LCT
@@ -1154,10 +1188,13 @@
 	tmb_alct1			<= alct1_pipe[10:0];
 	tmb_alctb			<= alct0_pipe[15:11];
 	tmb_alcte			<= alcte_pipe[1:0];
-
+    //Tao, might update readout with anode HMT
 	wr_adr_rtmb   		<= wr_adr_xtmb_pipe;					// Buffer write address at TMB matching time, continuous
 	wr_push_rtmb  		<= wr_push_mux;							// Buffer write strobe at TMB matching time
 	wr_avail_rtmb 		<= wr_avail_xtmb_pipe;					// Buffer available at TMB matching time
+    //wr_adr_rtmb          <= hmt_fired_only ? wr_adr_xpre_hmt_pipe : wr_adr_xtmb_pipe;   // Buffer write address at TMB matching time, continuous
+    //wr_push_rtmb         <= hmt_fired_only ? wr_push_mux_hmt : wr_push_mux;        // Buffer write strobe at TMB matching time
+    //wr_avail_rtmb        <= hmt_fired_only ? wr_avail_xpre_hmt_pipe : wr_avail_xtmb_pipe; // Buffer available at TMB matching time
 	end
 
 // Had to wait for kill signal to go valid
@@ -1177,7 +1214,7 @@
 	reg [MXCLCTC-1:0]	clctc_real;
       reg [MXCCLUTB - 1   : 0] clct0_cclut_real; // new quality
       reg [MXCCLUTB - 1   : 0] clct1_cclut_real; // new quality
-      reg [MXHMTB - 1     : 0] hmt_trigger_real;
+      //reg [MXHMTB - 1     : 0] hmt_trigger_real;
 
 	wire keep_clct = trig_pulse && (trig_keep || non_trig_keep);
 
@@ -1187,7 +1224,7 @@
 	clctc_real <= clctc_pipe & {MXCLCTC {keep_clct}};
         clct0_cclut_real   <= clct0_cclut_pipe & {MXCCLUTB {keep_clct}};
         clct1_cclut_real   <= clct1_cclut_pipe & {MXCCLUTB {keep_clct}};
-        hmt_trigger_real   <= hmt_trigger_pipe;
+        //hmt_trigger_real   <= hmt_trigger_pipe;
 	end
 
 // Latch pipelined ALCTs, aligned in time with CLCTs because CLCTs are delayed 1bx in the SRLs
@@ -1248,6 +1285,7 @@
 	
 	wire [1:0] clct_bxn_insert	= clctc_real[1:0];			// CLCT bunch crossing number for events missing alct
 
+    wire    tmb_anode_hmt = run3_alct_df ? |(alct0_real[13:12]) : 1'b0;
 	wire	tmb_no_alct  = !alct0_vpf;
 	wire	tmb_no_clct  = !clct0_vpf;
 
@@ -1299,7 +1337,7 @@
 	end
 
 	always @* begin
-	if      (tmb_no_alct  ) begin alct0 <= alct_dummy; alct1 <= alct_dummy; end // alct0 and alct1 do not exist, use dummy alct
+	if      (tmb_no_alct || !tmb_anode_hmt) begin alct0 <= alct_dummy; alct1 <= alct_dummy; end // alct0 and alct1 do not exist, use dummy alct
 	else if (tmb_dupe_alct) begin alct0 <= alct0_real; alct1 <= alct0_real; end // alct0 exists, but alct1 does not exist, copy alct0 into alct1
 	else                    begin alct0 <= alct0_real; alct1 <= alct1_real; end // alct0 and alct1 exist, so use them
 	end
@@ -1346,8 +1384,8 @@
       wire  [MXBNDB - 1   : 0] clct1_bnd; // new bending
       wire  [MXXKYB-1     : 0] clct1_xky; // new position with 1/8 precision
 
-      assign {clct0_bnd, clct0_xky} = clct0_cclut;
-      assign {clct1_bnd, clct1_xky} = clct1_cclut;
+      assign {clct0_bnd} = clct0_cclut;
+      assign {clct1_bnd} = clct1_cclut;
 //------------------------------------------------------------------------------------------------------------------
 // LCT Quality
 //------------------------------------------------------------------------------------------------------------------
@@ -1410,14 +1448,14 @@
   wire   lct0_vpf_run3 = (lct0_qlt_run3[2:0] > 3'b0);
   wire   lct1_vpf_run3 = (lct1_qlt_run3[2:0] > 3'b0);
 
-  wire [4:0] lct_pid_run3;
-  patid_5bits upid5bit(
-  .lct0_vpf  (lct0_vpf_run3),
-  .clct0_pid (clct0_pat[2:0]),
-  .lct1_vpf  (lct1_vpf_run3),
-  .clct1_pid (clct1_pat[2:0]),
-  .out_pid   (lct_pid_run3[4:0])
-  );
+  wire [4:0] lct_pid_run3 = 0;
+  //patid_5bits upid5bit(
+  //.lct0_vpf  (lct0_vpf_run3),
+  //.clct0_pid (clct0_pat[2:0]),
+  //.lct1_vpf  (lct1_vpf_run3),
+  //.clct1_pid (clct1_pat[2:0]),
+  //.out_pid   (lct_pid_run3[4:0])
+  //);
 
 //------------------------------------------------------------------------------------------------------------------
 // Delay alct and clct bx0 strobes
@@ -1453,12 +1491,20 @@
 //------------------------------------------------------------------------------------------------------------------
 // Format MPC output words
 //------------------------------------------------------------------------------------------------------------------
-      wire [MXHMTB-1:0]  hmt_trigger_run3 = hmt_trigger_real;
+      reg [1:0] hmt_anode_outtime [2:0];
+      wire [1:0] anode_hmt_bits = run3_alct_df ? alct0[13:12] : 2'b00;
+      always @(posedge clock) begin
+           hmt_anode_outtime[0] <=  anode_hmt_bits;
+           hmt_anode_outtime[1] <=  hmt_anode_outtime[0];
+           hmt_anode_outtime[2] <=  hmt_anode_outtime[1];
+      end
 
-      wire [4:0] clct0_bnd_run3 = clct0_bnd[4:0];
-      wire [4:0] clct1_bnd_run3 = clct1_bnd[4:0];
-      wire [9:0] clct0_xky_run3 = clct0_xky[9:0];
-      wire [9:0] clct1_xky_run3 = clct1_xky[9:0];
+      wire [MXHMTB-1:0]  hmt_trigger_run3 = {hmt_anode_outtime[2][1:0], anode_hmt_bits[1:0]};
+
+      wire [4:0] clct0_bnd_run3 = {clct0_bend, clct0_pat};
+      wire [4:0] clct1_bnd_run3 = {clct1_bend, clct1_pat}; 
+      wire [9:0] clct0_xky_run3 = {clct0[15:8], 2'b00};
+      wire [9:0] clct1_xky_run3 = {clct1[15:8], 2'b00};
 
       //real LCT for Run3
       assign  mpc0_frame0_run3[6:0]   = alct0_key[6:0];

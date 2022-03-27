@@ -701,6 +701,12 @@
 	event_counter64,
 	event_counter65,
 
+    //HMT
+	event_counter96,
+	event_counter97,
+	event_counter103,
+	event_counter116,
+	event_counter117,
 // Header Counters
 	hdr_clear_on_resync,
 	pretrig_counter,
@@ -850,6 +856,9 @@
 	parameter ALCT_MUONIC		=  1'b1;			// Floats ALCT board  in clock-space with independent time-of-flight delay
 	parameter CFEB_MUONIC		=  1'b1;			// Floats CFEB boards in clock-space with independent time-of-flight delay
 	parameter CCB_BX0_EMULATOR	=  1'b0;			// Turns on bx0 emulator at power up, must be 0 for all CERN versions
+	parameter VERSION_FORMAT      = 4'h0;     // Version branch
+    parameter VERSION_MAJOR       = 4'h0;     // Major version
+    parameter VERSION_MINOR       = 5'h0;     // Minor version
 
 	`include "source/tmb_virtex2_fw_version.v"
 
@@ -866,6 +875,9 @@
 	$display ("vme.ALCT_MUONIC      = %H",ALCT_MUONIC);
 	$display ("vme.CFEB_MUONIC      = %H",CFEB_MUONIC);
 	$display ("vme.CCB_BX0_EMULATOR = %H",CCB_BX0_EMULATOR);
+	$display ("vme.VERSION_FORMAT   = %H",VERSION_FORMAT);
+    $display ("vme.VERSION_MAJOR    = %H",VERSION_MAJOR);
+    $display ("vme.VERSION_MINOR    = %H",VERSION_MINOR);
 	end
 
 //------------------------------------------------------------------------------------------------------------------
@@ -1473,8 +1485,8 @@
     //output run3_daq_df;
     //output run3_alct_df;
   //output run2_revcode;
-  wire run2_revcode = 1'b0;
-  wire run3_daq_df = ccLUT_enable;
+  //wire run2_revcode = 1'b0;
+  //wire run3_daq_df = ccLUT_enable;
 
 // CFEB Ports: Hot Channel Mask
 	output	[MXDS-1:0]		cfeb0_ly0_hcm;			// 1=enable DiStrip
@@ -1877,6 +1889,12 @@
 	input	[MXCNTVME-1:0]	event_counter63;
 	input	[MXCNTVME-1:0]	event_counter64;
 	input	[MXCNTVME-1:0]	event_counter65;
+	input  [MXCNTVME-1:0]  event_counter96;
+	input  [MXCNTVME-1:0]  event_counter97;
+	input  [MXCNTVME-1:0]  event_counter103;
+	input  [MXCNTVME-1:0]  event_counter116;
+	input  [MXCNTVME-1:0]  event_counter117;
+// Event Counter Ports
 
 // Header Counters
 	output					hdr_clear_on_resync;	// Clear header counters on ttc_resync
@@ -3187,13 +3205,36 @@
 //------------------------------------------------------------------------------------------------------------------
 // Construct firmware revcode from global define, truncate for DMB frame
 	wire [15:0]	revcode_vme;
+	wire [15:0]	revcode_vme_new;
 	wire [15:0]	version_slot;
 
 	assign revcode_vme[8:0]		= (MONTHDAY[15:12]*10 + MONTHDAY[11:8])*32+ (MONTHDAY[7:4]*10 + MONTHDAY[3:0]);
 	assign revcode_vme[12:9]	= YEAR[3:0]+4'hA;		// Need to reformat this in year 2018
 	assign revcode_vme[15:13]	= FPGAID[15:13];		// Virtex 2,4,6 etc
 
-	assign revcode[14:0]		= revcode_vme[14:0];	// Sequencer format is 15 bits, VME is 16
+// VME ID Registers, Readonly
+	//assign revcode[14:0]		= revcode_vme[14:0];	// Sequencer format is 15 bits, VME is 16
+
+    //New revcode
+    assign revcode_vme_new [04:00] = VERSION_MINOR;// 6 bits = Minor version  (minor features, internal fixes, bug fixes, etc).
+    assign revcode_vme_new [08:05] = VERSION_MAJOR;//5 bits = Major Version (major features which breaks compatibility, requires      changes to other board firmware)
+    //[12:09], 4bits for DAQ format
+    //0, old TMB
+    //1, Run2 OTMB
+    //2, Run3 OTMB with CCLUT and without GEM
+    //3, Run3 OTMB with CCLUT and GEM
+    //4, Run3 TMB, hybrid of Run2 pattern finder and Run3 data format
+    assign revcode_vme_new [12:09] = VERSION_FORMAT;
+    assign revcode_vme_new [15:13] = 3'd0;//all 0 for Run2 compatibility 
+
+    //wire run2_revcode_enable = run2_revcode && !run3_daq_df;//switch to Run2 legacy revision code
+    //wire [15:0] run2_legacy_revcode;//2016.04.14
+    //assign run2_legacy_revcode[8:0]    = 8'd142;//4*32 + 14
+    //assign run2_legacy_revcode[12:9]   = 4'h6 + 4'hA;
+    //assign run2_legacy_revcode[15:13]  = FPGAID[15:13];
+    //assign revcode[14:0]    = run2_revcode_enable ? run2_legacy_revcode[14:0] : ((ccLUT_enable) ? revcode_vme_new[14:0] : revcode_vme[14:0]);  // Sequencer format is 15 bits, VME is 16
+    assign revcode[14:0]    = revcode_vme_new[14:0];  // Sequencer format is 15 bits, VME is 16
+
 
 // VME ID Registers, Readonly
 	assign version_slot[ 3: 0]	= FIRMWARE_TYPE[3:0];	// Firmware type, C=Normal TMB, D=Debug loopback
@@ -3204,7 +3245,8 @@
 	assign id_reg0_rd = version_slot[15:0];
 	assign id_reg1_rd = MONTHDAY[15:0];
 	assign id_reg2_rd = YEAR[15:0];
-	assign id_reg3_rd = revcode_vme[15:0];
+	//assign id_reg3_rd = revcode_vme[15:0];
+	assign id_reg3_rd = revcode_vme_new[15:0];
 
 //------------------------------------------------------------------------------------------------------------------
 // ADR_VME_STATUS=08	VME Bus Status Register, Readonly
@@ -5512,15 +5554,23 @@
   assign cnt[85]  = active_cfeb2_event_counter;      // CFEB2 active flag sent to DMB
   assign cnt[86]  = active_cfeb3_event_counter;      // CFEB3 active flag sent to DMB
   assign cnt[87]  = active_cfeb4_event_counter;      // CFEB4 active flag sent to DMB
-  assign cnt[88]  = {MXCNTVME{1'b0}};                // CFEB5 active flag sent to DMB - it is used in ME1/1 OTMB only
-  assign cnt[89]  = {MXCNTVME{1'b0}};                // CFEB6 active flag sent to DMB - it is used in ME1/1 OTMB only
-  assign cnt[90]  = {MXCNTVME{1'b0}};                // ME1a CFEB active flag sent to DMB - it is used in ME1/1 OTMB only
-  assign cnt[91]  = {MXCNTVME{1'b0}};                // ME1b CFEB active flag sent to DMB - it is used in ME1/1 OTMB only
   assign cnt[92]  = active_cfebs_event_counter;      // Any CFEB active flag sent to DMB
 
-  assign cnt[93]  = {MXCNTVME{1'b0}};  //reserd for localized dead zone
+  //assign cnt[88]  = {MXCNTVME{1'b0}};                // CFEB5 active flag sent to DMB - it is used in ME1/1 OTMB only
+  //assign cnt[89]  = {MXCNTVME{1'b0}};                // CFEB6 active flag sent to DMB - it is used in ME1/1 OTMB only
+  //assign cnt[90]  = {MXCNTVME{1'b0}};                // ME1a CFEB active flag sent to DMB - it is used in ME1/1 OTMB only
+  //assign cnt[91]  = {MXCNTVME{1'b0}};                // ME1b CFEB active flag sent to DMB - it is used in ME1/1 OTMB only
+  //assign cnt[93]  = {MXCNTVME{1'b0}};  //reserd for localized dead zone
   assign cnt[94]  = {MXCNTVME{1'b0}};  //reserd for localized dead zone
+  //tmp reuse for HMT, the definition in software should be changed!!!
+  assign cnt[88]  = event_counter96;
+  assign cnt[89]  = event_counter97;
+  assign cnt[90]  = event_counter103;
+  assign cnt[91]  = event_counter116;
+  assign cnt[93]  = event_counter117;
+  //assign cnt[94]  = event_counter65;
   assign cnt[95]  = bx0_match_counter; 
+
 
 // Snapshot current value of all counters at once
 	genvar j;

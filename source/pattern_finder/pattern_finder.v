@@ -125,19 +125,11 @@
 	hs_hit_1st,
 	hs_pid_1st,
 	hs_key_1st,
-        hs_bnd_1st,
-        hs_xky_1st,
-        hs_car_1st,
-        hs_run2pid_1st,
 
 	hs_hit_2nd,
 	hs_pid_2nd,
 	hs_key_2nd,
 	hs_bsy_2nd,
-        hs_bnd_2nd,
-        hs_xky_2nd,
-        hs_car_2nd,
-        hs_run2pid_2nd,
 
 	hs_layer_trig,
 	hs_nlayers_hit,
@@ -181,10 +173,6 @@
 	parameter MXHITB		=	3;				// Hits on pattern bits
 	parameter MXPATB		=	3+4;			// Pattern bits
 
-   parameter MXPATC  = 11;                // Pattern Carry Bits
-   parameter MXOFFSB = 4;                 // Quarter-strip bits
-   parameter MXBNDB  = 5;                 // Bend bits
-	parameter MXXKYB  = 9;
 //-------------------------------------------------------------------------------------------------------------------
 // Ports
 //-------------------------------------------------------------------------------------------------------------------
@@ -255,19 +243,10 @@
 	output	[MXPIDB-1:0]	hs_pid_1st;			// 1st CLCT pattern ID
 	output	[MXKEYBX-1:0]	hs_key_1st;			// 1st CLCT key 1/2-strip
 
-        output [MXXKYB     - 1 : 0] hs_xky_1st; // 1st CLCT key 1/8-strip
-        output [MXBNDB     - 1 : 0] hs_bnd_1st; // 1st CLCT pattern lookup bend angle
-        output [MXPATC     - 1 : 0] hs_car_1st; // 1st CLCT pattern lookup comparator-code
-        output [MXPIDB-1: 0]  hs_run2pid_1st; // 1st CLCT pattern ID
-
 	output	[MXHITB-1:0]	hs_hit_2nd;			// 2nd CLCT pattern hits
 	output	[MXPIDB-1:0]	hs_pid_2nd;			// 2nd CLCT pattern ID
 	output	[MXKEYBX-1:0]	hs_key_2nd;			// 2nd CLCT key 1/2-strip
-	output			hs_bsy_2nd;			// 2nd CLCT busy, logic error indicator
-        output [MXXKYB     - 1 : 0] hs_xky_2nd; // 1st CLCT key 1/8-strip
-        output [MXBNDB     - 1 : 0] hs_bnd_2nd; // 1st CLCT pattern lookup bend angle
-        output [MXPATC     - 1 : 0] hs_car_2nd; // 1st CLCT pattern lookup comparator-code
-        output [MXPIDB-1: 0]  hs_run2pid_2nd; // 1st CLCT pattern ID
+	output					hs_bsy_2nd;			// 2nd CLCT busy, logic error indicator
 
 	output					hs_layer_trig;		// Layer triggered
 	output	[MXHITB-1:0]	hs_nlayers_hit;		// Number of layers hit
@@ -1321,46 +1300,25 @@
 	reg  [MXHITB-1:0]	hs_hit_1st;
 	reg  [MXKEYBX-1:0]	hs_key_1st;
 
-          reg [MXBNDB - 1:0] hs_bnd_1st;
-      reg [MXPATC - 1:0] hs_car_1st;
-      reg [MXXKYB - 1:0] hs_xky_1st;
-      reg [MXPIDB - 1:0] hs_run2pid_1st;
-
 	assign hs_hit_1st_dly = hs_pat_1st_dly[MXPATB-1:MXPIDB];
 	wire   blank_1st	  = ((hs_hit_1st_dly==0) && (clct_blanking==1)) || purging;
 	wire   lyr_trig_1st	  = (hs_layer_latch && layer_trig_en_ff);
-
-        wire  [MXBNDB - 2:0] hs_bnd_1st_dly = run3bnd(hs_pat_1st_dly[MXPIDB-1:1]);
 
 	always @(posedge clock) begin
 	if (blank_1st) begin							// blank 1st clct
 	hs_pid_1st	<= 0;
 	hs_hit_1st	<= 0;
 	hs_key_1st	<= 0;
-           hs_bnd_1st <= 0;
-          hs_car_1st <= 0;
-          hs_xky_1st <= 0;
-          hs_run2pid_1st <= 0;
 	end
 	else if (lyr_trig_1st) begin					// layer-trigger mode
 	hs_pid_1st	<= 1;								// Pattern id=1 for layer triggers
 	hs_hit_1st	<= hs_nlayers_hit_dly;				// Insert number of layers hit
 	hs_key_1st	<= 0;								// Dummy key
-        hs_bnd_1st <= 0;
-        hs_car_1st <= 0;
-        hs_xky_1st <= 0;
-        hs_run2pid_1st <= 0;
 	end
 	else begin										// else assert final 1st clct
 	hs_key_1st <= hs_key_1st_dly;
-	//hs_pid_1st <= hs_pat_1st_dly[MXPIDB-1:0];
-        hs_pid_1st    <= {hs_pat_1st_dly[MXPIDB-1:2], hs_pat_1st_dly[0]};
+	hs_pid_1st <= hs_pat_1st_dly[MXPIDB-1:0];
 	hs_hit_1st <= hs_pat_1st_dly[MXPATB-1:MXPIDB];
-          hs_bnd_1st <= {hs_pat_1st_dly[0], hs_bnd_1st_dly};
-          hs_car_1st <= 0;
-          hs_xky_1st <= {hs_key_1st_dly, 2'b10};
-          hs_run2pid_1st <= hs_pat_1st_dly[MXPIDB-1:0];
-
 	end
 	end
 
@@ -1546,15 +1504,10 @@
 	reg	 [MXHITB-1:0]	hs_hit_2nd;
 	reg	 [MXKEYBX-1:0]	hs_key_2nd;
 	reg					hs_bsy_2nd;
-          reg [MXBNDB     - 1:0] hs_bnd_2nd;
-          reg [MXPATC     - 1:0] hs_car_2nd;
-          reg [MXXKYB - 1:0]     hs_xky_2nd;
-          reg [MXPIDB     - 1:0] hs_run2pid_2nd;
 
 	assign hs_hit_s5    = hs_pat_s5[MXPATB-1:MXPIDB];
 	wire   blank_2nd    = ((hs_hit_s5==0) && (clct_blanking==1)) || purging;
 	wire   lyr_trig_2nd = (hs_layer_latch && layer_trig_en_ff);
-        wire [MXBNDB     - 2:0]  hs_bnd_s5 = run3bnd(hs_pat_s5[MXPIDB-1:1]);
 
 	always @(posedge clock) begin
 	if (blank_2nd) begin
@@ -1562,55 +1515,20 @@
 	hs_hit_2nd	<= 0;
 	hs_key_2nd	<= 0;
 	hs_bsy_2nd	<= hs_bsy_s5;
-
-          hs_bnd_2nd <= 0;
-          hs_car_2nd <= 0;
-          hs_xky_2nd <= 0;
-          hs_run2pid_2nd <= 0;
 	end
 	else if (lyr_trig_2nd) begin				// layer-trigger mode
 	hs_pid_2nd	<= 0;
 	hs_hit_2nd	<= 0;
 	hs_key_2nd	<= 0;
 	hs_bsy_2nd	<= hs_bsy_s5;
-          hs_bnd_2nd <= 0;
-          hs_car_2nd <= 0;
-          hs_xky_2nd <= 0;
-          hs_run2pid_2nd <= 0;
 	end
 	else begin									// else assert final 2nd clct
-	//hs_pid_2nd	<= hs_pat_s5[MXPIDB-1:0];
-        hs_pid_2nd    <= {hs_pat_s5[MXPIDB-1:2], hs_pat_s5[0]};
+	hs_pid_2nd	<= hs_pat_s5[MXPIDB-1:0];
 	hs_hit_2nd	<= hs_pat_s5[MXPATB-1:MXPIDB];
 	hs_key_2nd	<= hs_key_s5;
 	hs_bsy_2nd	<= hs_bsy_s5;
-          hs_bnd_2nd <=  {hs_pat_s5[0],  hs_bnd_s5};
-          hs_car_2nd <= 0;
-          hs_xky_2nd <= {hs_key_s5, 2'b10};
-          hs_run2pid_2nd <= hs_pat_s5[MXPIDB-1:0];
-
-          end//end of else case
-      end//end always
-
-//========================
-// LUt to convert run2 pattern id into Run3 bending for CCLUT
-function [3: 0] run3bnd;
-  input [2: 0] pat;
-  reg   [3: 0] bnd;
-
-  begin
-    case (pat[2: 0])
-      3'd5 :     bnd = 4'd1;
-      3'd4 :     bnd = 4'd4;
-      3'd3 :     bnd = 4'd7;
-      3'd2 :     bnd = 4'd10;
-      3'd1 :     bnd = 4'd13;
-      default :  bnd = 4'd15;
-    endcase
-    run3bnd = bnd;
-  end
-  endfunction
-
+	end
+	end
 
 //-------------------------------------------------------------------------------------------------------------------
 	endmodule

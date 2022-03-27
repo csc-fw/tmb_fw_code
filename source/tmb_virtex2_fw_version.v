@@ -23,6 +23,13 @@
 	`define FPGAID				16'h4000	// FPGA Type 4000 XC2V4000
 
 //---------------------------------------------------------------------------------------------------------------------------------------
+// Conditional new firmware revcode for unpacker 
+//---------------------------------------------------------------------------------------------------------------------------------------
+  `define VERSION_FORMAT       04'h4   // [12:09]; 0=TMB standard, 1=OTMB Standard, 2=CCLUT, 3=GEM+CCLUT, 4=Run3 TMB(Run2 pattern finder+Run3 DF)
+  `define VERSION_MAJOR        04'h0   // [08:05];4 bits = Major Version (major features which breaks compatibility, requires c    hanges to other board firmware)
+  `define VERSION_MINOR        05'h1   // [04:00];5 bits = Minor version  (minor features, internal fixes, bug fixes, etc).
+  `define CCLUT                01'h1  // 1=turn on CCLUT. For TMB fw, it is to enable Run3 trigger data format and DAQ data format
+//---------------------------------------------------------------------------------------------------------------------------------------
 // Conditional compile flags: Enable only one CSC_TYPE
 //---------------------------------------------------------------------------------------------------------------------------------------
 	`define CSC_TYPE_A			04'hA		// Normal   CSC:  Normal chambers facing toward IR
