@@ -162,6 +162,8 @@
 	ly3hs,
 	ly4hs,
 	ly5hs,
+	nhits_per_cfeb,
+    layers_withhits_per_cfeb,
 
 // Status
 	demux_tp_1st,
@@ -270,6 +272,8 @@
 	output	[MXHS-1:0]		ly3hs;
 	output	[MXHS-1:0]		ly4hs;
 	output	[MXHS-1:0]		ly5hs;
+	output [5:0] nhits_per_cfeb;
+    output [MXLY-1:0] layers_withhits_per_cfeb;
 
 // Status
 	output					demux_tp_1st;		// Demultiplexer test point first-in-time
@@ -808,6 +812,12 @@
 	endgenerate
 
 	assign triad_skip = (|tskip[0]) | (|tskip[1]) | (|tskip[2]) | (|tskip[3]) | (|tskip[4]) | (|tskip[5]);
+
+	reg [5:0] nhits_s0 = 6'b0;
+    reg [MXLY-1:0] layers_with_hit_s0 = 0;
+    
+    assign nhits_per_cfeb = nhits_s0;
+    assign layers_withhits_per_cfeb = layers_with_hit_s0;
 
 // Expand 2d arrays for transmission to next module
 	assign ly0hs = hs[0];

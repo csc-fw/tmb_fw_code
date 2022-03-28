@@ -295,6 +295,13 @@
 	dmb_thresh_pretrig,
 	adjcfeb_dist,
 
+
+	    ccLUT_enable,
+    run3_trig_df,
+    run3_daq_df,
+    run3_alct_df,
+    //run2_revcode,
+
 // CFEB Ports: Hot Channel Mask
 	cfeb0_ly0_hcm,
 	cfeb0_ly1_hcm,
@@ -465,6 +472,14 @@
 	trig_source_vme,
 	nlayers_hit_vme,
 	clct_bx0_sync_err,
+
+  //clct0_vme_bnd,
+  //clct0_vme_xky,
+  //clct0_vme_carry,
+
+  //clct1_vme_bnd,
+  //clct1_vme_xky,
+  //clct1_vme_carry,
 
 // Sequencer Ports: Raw Hits Ram
 	dmb_wr,
@@ -687,6 +702,12 @@
 	event_counter64,
 	event_counter65,
 
+    //HMT
+	event_counter96,
+	event_counter97,
+	event_counter103,
+	event_counter116,
+	event_counter117,
 // Header Counters
 	hdr_clear_on_resync,
 	pretrig_counter,
@@ -716,6 +737,8 @@
   active_cfeb2_event_counter,      // CFEB2 active flag sent to DMB
   active_cfeb3_event_counter,      // CFEB3 active flag sent to DMB
   active_cfeb4_event_counter,      // CFEB4 active flag sent to DMB
+
+  bx0_match_counter,
 
 // CSC Orientation Ports
 	csc_type,
@@ -834,6 +857,9 @@
 	parameter ALCT_MUONIC		=  1'b1;			// Floats ALCT board  in clock-space with independent time-of-flight delay
 	parameter CFEB_MUONIC		=  1'b1;			// Floats CFEB boards in clock-space with independent time-of-flight delay
 	parameter CCB_BX0_EMULATOR	=  1'b0;			// Turns on bx0 emulator at power up, must be 0 for all CERN versions
+	parameter VERSION_FORMAT      = 4'h0;     // Version branch
+    parameter VERSION_MAJOR       = 4'h0;     // Major version
+    parameter VERSION_MINOR       = 5'h0;     // Minor version
 
 	`include "source/tmb_virtex2_fw_version.v"
 
@@ -850,6 +876,9 @@
 	$display ("vme.ALCT_MUONIC      = %H",ALCT_MUONIC);
 	$display ("vme.CFEB_MUONIC      = %H",CFEB_MUONIC);
 	$display ("vme.CCB_BX0_EMULATOR = %H",CCB_BX0_EMULATOR);
+	$display ("vme.VERSION_FORMAT   = %H",VERSION_FORMAT);
+    $display ("vme.VERSION_MAJOR    = %H",VERSION_MAJOR);
+    $display ("vme.VERSION_MINOR    = %H",VERSION_MINOR);
 	end
 
 //------------------------------------------------------------------------------------------------------------------
@@ -892,6 +921,17 @@
 	parameter MXPIDB		= 4;			// Pattern ID bits
 	parameter MXHITB		= 3;			// Hits on pattern bits
 	parameter MXPATB		= 3+4;			// Pattern bits
+
+	        parameter MXXKYB                = 10;
+         //CCLUT
+        //parameter MXSUBKEYBX = 10;            // Number of EightStrip key bits on 7 CFEBs, was 8 bits with traditional pattern finding
+        parameter MXPATC   = 12;                // Pattern Carry Bits
+        parameter MXOFFSB = 4;                 // Quarter-strip bits
+        parameter MXBNDB  = 5;                 // Bend bits, 4bits for value, 1bit for sign
+        parameter MXPID   = 11;                // Number of patterns
+        parameter MXPAT   = 5;                 // Number of patterns
+        parameter MXHMTB     =  4;// bits for HMT
+        parameter NHMTHITB   = 10;
 
 // Raw hits RAM parameters
 	parameter RAM_DEPTH		= 2048;			// Storage bx depth
@@ -1155,6 +1195,7 @@
 
 	parameter ADR_V6_EXTEND				= 9'h17A;	// DCFEB 7-bit extensions
 
+    parameter ADR_RUN3_FORMAT_CTRL      = 10'h1AA; // control for CCLUT, data format
 //------------------------------------------------------------------------------------------------------------------
 // Ports
 //------------------------------------------------------------------------------------------------------------------
@@ -1441,6 +1482,12 @@
 	output	[MXHITB-1:0]	dmb_thresh_pretrig;		// Hits on pattern template DMB active-feb threshold
 	output	[MXKEYB-1+1:0]	adjcfeb_dist;			// Distance from key to cfeb boundary for marking adjacent cfeb as hit
 
+	    input ccLUT_enable; // In
+    output run3_trig_df;
+    output run3_daq_df;
+    output run3_alct_df;
+    wire run2_revcode;//not an output
+
 // CFEB Ports: Hot Channel Mask
 	output	[MXDS-1:0]		cfeb0_ly0_hcm;			// 1=enable DiStrip
 	output	[MXDS-1:0]		cfeb0_ly1_hcm;			// 1=enable DiStrip
@@ -1613,6 +1660,13 @@
 	input	[10:0]			trig_source_vme;		// Trigger source readback
 	input	[2:0]			nlayers_hit_vme;		// Number layers hit on layer trigger
 	input					clct_bx0_sync_err;		// Sync error: BXN counter==0 did not match bx0
+
+	//      input  [MXBNDB - 1   : 0] clct0_vme_bnd; // new bending 
+    //  input  [MXXKYB-1     : 0] clct0_vme_xky; // new position with 1/8 precision
+    //  input  [MXBNDB - 1   : 0] clct1_vme_bnd; // new bending 
+    //  input  [MXXKYB-1     : 0] clct1_vme_xky; // new position with 1/8 precision
+    //  input  [MXPATC-1     : 0] clct0_vme_carry;         // First  CLCT
+    //  input  [MXPATC-1     : 0] clct1_vme_carry;         // Second CLCT
 
 // Sequencer Ports: Raw Hits Ram
 	output					dmb_wr;					// Raw hits RAM VME write enable
@@ -1835,6 +1889,12 @@
 	input	[MXCNTVME-1:0]	event_counter63;
 	input	[MXCNTVME-1:0]	event_counter64;
 	input	[MXCNTVME-1:0]	event_counter65;
+	input  [MXCNTVME-1:0]  event_counter96;
+	input  [MXCNTVME-1:0]  event_counter97;
+	input  [MXCNTVME-1:0]  event_counter103;
+	input  [MXCNTVME-1:0]  event_counter116;
+	input  [MXCNTVME-1:0]  event_counter117;
+// Event Counter Ports
 
 // Header Counters
 	output					hdr_clear_on_resync;	// Clear header counters on ttc_resync
@@ -1865,6 +1925,8 @@
   input  [MXCNTVME-1:0] active_cfeb2_event_counter;      // CFEB2 active flag sent to DMB
   input  [MXCNTVME-1:0] active_cfeb3_event_counter;      // CFEB3 active flag sent to DMB
   input  [MXCNTVME-1:0] active_cfeb4_event_counter;      // CFEB4 active flag sent to DMB
+
+  input [MXCNTVME-1:0] bx0_match_counter;
 
 // CSC Orientation Ports
 	input	[3:0]			csc_type;				// Firmware compile type
@@ -2375,6 +2437,8 @@
 	wire	[15:0]	alct_startup_delay_rd;
 	wire	[15:0]	alct_startup_status_rd;
 
+    reg  [15:0] run3_format_ctrl_wr;
+    wire [15:0] run3_format_ctrl_rd;
 //------------------------------------------------------------------------------------------------------------------
 // Address Write Decodes
 //------------------------------------------------------------------------------------------------------------------
@@ -2499,6 +2563,8 @@
 	wire			wr_alct_startup_delay;
 
 	wire			wr_adr_cap;
+  
+    wire      wr_run3_format_ctrl;
 
 //---------------------------------------------------------------------------------------------------------------------
 //	Power-up Section
@@ -2871,6 +2937,8 @@
 	ADR_CFEB4_BADBITS_LY23:		data_out <=	cfeb4_badbits_ly23_rd;
 	ADR_CFEB4_BADBITS_LY45:		data_out <=	cfeb4_badbits_ly45_rd;
 
+    ADR_RUN3_FORMAT_CTRL:       data_out <= run3_format_ctrl_rd;
+
 	ADR_ALCT_STARTUP_DELAY:		data_out <=	alct_startup_delay_rd;
 	ADR_ALCT_STARTUP_STATUS:	data_out <=	alct_startup_status_rd;
 	default:					data_out <= 16'hDEAF;
@@ -3001,6 +3069,8 @@
 
 	assign wr_cfeb_badbits_ctrl		= (reg_adr==ADR_CFEB_BADBITS_CTRL	&& clk_en);
 	assign wr_cfeb_badbits_nbx		= (reg_adr==ADR_CFEB_BADBITS_TIMER	&& clk_en);
+
+    assign wr_run3_format_ctrl      =  (reg_adr==ADR_RUN3_FORMAT_CTRL       && clk_en);
 
 	assign wr_alct_startup_delay	= (reg_adr==ADR_ALCT_STARTUP_DELAY	&& clk_en);
 	assign wr_adr_cap				= (                        			  adr_cap);
@@ -3143,13 +3213,36 @@
 //------------------------------------------------------------------------------------------------------------------
 // Construct firmware revcode from global define, truncate for DMB frame
 	wire [15:0]	revcode_vme;
+	wire [15:0]	revcode_vme_new;
 	wire [15:0]	version_slot;
 
 	assign revcode_vme[8:0]		= (MONTHDAY[15:12]*10 + MONTHDAY[11:8])*32+ (MONTHDAY[7:4]*10 + MONTHDAY[3:0]);
 	assign revcode_vme[12:9]	= YEAR[3:0]+4'hA;		// Need to reformat this in year 2018
 	assign revcode_vme[15:13]	= FPGAID[15:13];		// Virtex 2,4,6 etc
 
-	assign revcode[14:0]		= revcode_vme[14:0];	// Sequencer format is 15 bits, VME is 16
+// VME ID Registers, Readonly
+	//assign revcode[14:0]		= revcode_vme[14:0];	// Sequencer format is 15 bits, VME is 16
+
+    //New revcode
+    assign revcode_vme_new [04:00] = VERSION_MINOR;// 6 bits = Minor version  (minor features, internal fixes, bug fixes, etc).
+    assign revcode_vme_new [08:05] = VERSION_MAJOR;//5 bits = Major Version (major features which breaks compatibility, requires      changes to other board firmware)
+    //[12:09], 4bits for DAQ format
+    //0, old TMB
+    //1, Run2 OTMB
+    //2, Run3 OTMB with CCLUT and without GEM
+    //3, Run3 OTMB with CCLUT and GEM
+    //4, Run3 TMB, hybrid of Run2 pattern finder and Run3 data format
+    assign revcode_vme_new [12:09] = VERSION_FORMAT;
+    assign revcode_vme_new [15:13] = 3'd0;//all 0 for Run2 compatibility 
+
+    wire run2_revcode_enable = run2_revcode && !run3_daq_df;//switch to Run2 legacy revision code
+    wire [15:0] run2_legacy_revcode;//2016.04.14
+    assign run2_legacy_revcode[8:0]    = 8'd142;//4*32 + 14
+    assign run2_legacy_revcode[12:9]   = 4'h6 + 4'hA;
+    assign run2_legacy_revcode[15:13]  = FPGAID[15:13];
+    assign revcode[14:0]    = run2_revcode_enable ? run2_legacy_revcode[14:0] : revcode_vme_new[14:0];  // Sequencer format is 15 bits, VME is 16
+    //assign revcode[14:0]    = revcode_vme_new[14:0];  // Sequencer format is 15 bits, VME is 16
+
 
 // VME ID Registers, Readonly
 	assign version_slot[ 3: 0]	= FIRMWARE_TYPE[3:0];	// Firmware type, C=Normal TMB, D=Debug loopback
@@ -3160,7 +3253,8 @@
 	assign id_reg0_rd = version_slot[15:0];
 	assign id_reg1_rd = MONTHDAY[15:0];
 	assign id_reg2_rd = YEAR[15:0];
-	assign id_reg3_rd = revcode_vme[15:0];
+	//assign id_reg3_rd = revcode_vme[15:0];
+	assign id_reg3_rd = revcode_vme_new[15:0];
 
 //------------------------------------------------------------------------------------------------------------------
 // ADR_VME_STATUS=08	VME Bus Status Register, Readonly
@@ -5361,7 +5455,7 @@
 // ADR_CNT_RDATA=D2	Trigger/Readout Counter Data Register
 //------------------------------------------------------------------------------------------------------------------
 // Remap 1D counters to 2D, beco XST does not support 2D ports
-	parameter MXCNT=93;	// Number of counters, last counter id is mxcnt-1. Same number of counters in ME1/1 OTMB and TMB
+	parameter MXCNT=96;	// Number of counters, last counter id is mxcnt-1. Same number of counters in ME1/1 OTMB and TMB , KSedit trigger data format ?
 	reg  [MXCNTVME-1:0]	cnt_snap [MXCNT-1:0];		// Event counter snapshot 2D
 	wire [MXCNTVME-1:0]	cnt      [MXCNT-1:0];		// Event counter 2D map
 
@@ -5468,11 +5562,23 @@
   assign cnt[85]  = active_cfeb2_event_counter;      // CFEB2 active flag sent to DMB
   assign cnt[86]  = active_cfeb3_event_counter;      // CFEB3 active flag sent to DMB
   assign cnt[87]  = active_cfeb4_event_counter;      // CFEB4 active flag sent to DMB
-  assign cnt[88]  = {MXCNTVME{1'b0}};                // CFEB5 active flag sent to DMB - it is used in ME1/1 OTMB only
-  assign cnt[89]  = {MXCNTVME{1'b0}};                // CFEB6 active flag sent to DMB - it is used in ME1/1 OTMB only
-  assign cnt[90]  = {MXCNTVME{1'b0}};                // ME1a CFEB active flag sent to DMB - it is used in ME1/1 OTMB only
-  assign cnt[91]  = {MXCNTVME{1'b0}};                // ME1b CFEB active flag sent to DMB - it is used in ME1/1 OTMB only
   assign cnt[92]  = active_cfebs_event_counter;      // Any CFEB active flag sent to DMB
+
+  //assign cnt[88]  = {MXCNTVME{1'b0}};                // CFEB5 active flag sent to DMB - it is used in ME1/1 OTMB only
+  //assign cnt[89]  = {MXCNTVME{1'b0}};                // CFEB6 active flag sent to DMB - it is used in ME1/1 OTMB only
+  //assign cnt[90]  = {MXCNTVME{1'b0}};                // ME1a CFEB active flag sent to DMB - it is used in ME1/1 OTMB only
+  //assign cnt[91]  = {MXCNTVME{1'b0}};                // ME1b CFEB active flag sent to DMB - it is used in ME1/1 OTMB only
+  //assign cnt[93]  = {MXCNTVME{1'b0}};  //reserd for localized dead zone
+  assign cnt[94]  = {MXCNTVME{1'b0}};  //reserd for localized dead zone
+  //tmp reuse for HMT, the definition in software should be changed!!!
+  assign cnt[88]  = event_counter96;
+  assign cnt[89]  = event_counter97;
+  assign cnt[90]  = event_counter103;
+  assign cnt[91]  = event_counter116;
+  assign cnt[93]  = event_counter117;
+  //assign cnt[94]  = event_counter65;
+  assign cnt[95]  = bx0_match_counter; 
+
 
 // Snapshot current value of all counters at once
 	genvar j;
@@ -6126,6 +6232,33 @@
 	assign cfeb4_badbits_ly45_rd[15:0] = {cfeb4_ly5_badbits,cfeb4_ly4_badbits};
 
 //------------------------------------------------------------------------------------------------------------------
+// ADR_RUN3_FORMAT_CTRL = 0x1AA  CCLUT
+//------------------------------------------------------------------------------------------------------------------
+
+  initial begin
+    run3_format_ctrl_wr[0] = 1'b0;
+    run3_format_ctrl_wr[1] = 1'b1; // default, Run3 trigger format upgrade is off
+    run3_format_ctrl_wr[2] = 1'b1; // default, Run3 daq format upgrade is ON
+    run3_format_ctrl_wr[3] = 1'b1; // Run3 ALCT data format enable or not.  Run2 ALCT data format had HMT encoded
+    run3_format_ctrl_wr[4] = 1'b0; // use Run2 legacy revcode or not
+    run3_format_ctrl_wr[15:5] = 11'b0; // NOT used
+    //cclut_format_ctrl_wr[1] = 0; //CLCT pattern sorting, 0= use {pat, nhits}, 1={new quality}
+    //cclut_format_ctrl_wr[2] = 0; //LCT data format control, 0 = use Run2, 1= use Run3 with GEM-CSC+CCLUT
+  end
+  assign run3_trig_df = run3_format_ctrl_wr[1];
+  assign run3_daq_df  = run3_format_ctrl_wr[2];
+  assign run3_alct_df = run3_format_ctrl_wr[3];
+  assign run2_revcode = run3_format_ctrl_wr[4];
+
+  assign run3_format_ctrl_rd[0]    = ccLUT_enable;
+  assign run3_format_ctrl_rd[1]    = run3_trig_df ;//only enable it for CCLUT case
+  assign run3_format_ctrl_rd[2]    = run3_daq_df  ; 
+  assign run3_format_ctrl_rd[3]    = run3_alct_df ;
+  assign run3_format_ctrl_rd[4]    = run2_revcode ;
+  assign run3_format_ctrl_rd[15:5] = run3_format_ctrl_wr[15:5];
+      
+
+//------------------------------------------------------------------------------------------------------------------
 // ADR_ALCT_STARTUP_DELAY = 0x144 ALCT startup delay milliseconds for Spartan-6
 //------------------------------------------------------------------------------------------------------------------
 	initial begin
@@ -6254,6 +6387,7 @@
 	if (wr_sync_err_ctrl)			sync_err_ctrl_wr		<=	d[15:0];
 	if (wr_cfeb_badbits_ctrl)		cfeb_badbits_ctrl_wr	<=	d[15:0];
 	if (wr_cfeb_badbits_nbx)		cfeb_badbits_nbx_wr		<=	d[15:0];
+    if (wr_run3_format_ctrl)        run3_format_ctrl_wr     <= d[15:0];
 	if (wr_alct_startup_delay)		alct_startup_delay_wr	<=	d[15:0];
 	end
 
