@@ -332,7 +332,7 @@
 	rpc_smbrx,
 	rpc_dsn,
 	rpc_loop,
-	//KS remove rpc and miniscope 2022 rpc_tx,
+	rpc_tx,
 
 // CCB
 	_ccb_rx,
@@ -438,16 +438,6 @@
 	parameter MXPIDB		=	4;				// Pattern ID bits
 	parameter MXHITB		=	3;				// Hits on pattern bits
 	parameter MXPATB		=	3+4;			// Pattern bits
-        parameter MXXKYB                = 10;
-         //CCLUT
-        //parameter MXSUBKEYBX = 10;            // Number of EightStrip key bits on 7 CFEBs, was 8 bits with traditional pattern finding
-        parameter MXPATC   = 12;                // Pattern Carry Bits
-        parameter MXOFFSB = 4;                 // Quarter-strip bits
-        parameter MXBNDB  = 5;                 // Bend bits, 4bits for value, 1bit for sign
-        parameter MXPID   = 11;                // Number of patterns
-        parameter MXPAT   = 5;                 // Number of patterns
-        parameter MXHMTB     =  4;// bits for HMT
-        parameter NHMTHITB   = 10;
 
 // Sequencer Constants
 	parameter INJ_MXTBIN	=	5;				// Injector time bin counter width
@@ -536,7 +526,7 @@
 	input			rpc_smbrx;	// was rpc_rxalt[0]
 	input			rpc_dsn;	// was rpc_rxalt[1]	
 	output			rpc_loop;
-//KS remove rpc and miniscope 2022	output	[3:0]	rpc_tx;
+	output	[3:0]	rpc_tx;
 
 // CCB
 	input	[50:0]	_ccb_rx;
@@ -640,10 +630,6 @@
 	`ifdef CSC_TYPE_B			initial	$display ("CSC_TYPE_B    %H", `CSC_TYPE_B   );	`endif			
 	`ifdef CSC_TYPE_C			initial	$display ("CSC_TYPE_C    %H", `CSC_TYPE_C   );	`endif			
 	`ifdef CSC_TYPE_D			initial	$display ("CSC_TYPE_D    %H", `CSC_TYPE_D   );	`endif			
-            
-    `ifdef VERSION_MAJOR  initial $display ("VERSION_MAJOR  %H", `VERSION_MAJOR );  `endif
-    `ifdef VERSION_MINOR  initial $display ("VERSION_MINOR  %H", `VERSION_MINOR );  `endif
-    `ifdef VERSION_FORMAT initial $display ("VERSION_FORMAT %H", `VERSION_FORMAT);  `endif
 
 //-------------------------------------------------------------------------------------------------------------------
 // Clock DCM Instantiation
@@ -902,7 +888,6 @@
 	wire	[15:0]			alct0_inj;			
 	wire	[15:0]			alct1_inj;
 
-
 // VME ALCT sync mode ports
 	wire	[28:1]			alct_sync_rxdata_1st;	// Demux data for demux timing-in
 	wire	[28:1]			alct_sync_rxdata_2nd;	// Demux data for demux timing-in
@@ -989,13 +974,6 @@
 	wire	[MXCNTVME-1:0]	event_counter64;
 	wire	[MXCNTVME-1:0]	event_counter65;
 
-	wire  [MXCNTVME-1:0]  event_counter96;
-	wire  [MXCNTVME-1:0]  event_counter97;
-	wire  [MXCNTVME-1:0]  event_counter103;
-	wire  [MXCNTVME-1:0]  event_counter116;
-	wire  [MXCNTVME-1:0]  event_counter117;
-// Event Counter Ports
-
 // ALCT Structure Error Counters
 	wire	[7:0]			alct_err_counter0;			// Error counter 1D remap
 	wire	[7:0]			alct_err_counter1;
@@ -1015,8 +993,6 @@
   wire  [MXCNTVME-1:0] active_cfeb2_event_counter;      // CFEB2 active flag sent to DMB
   wire  [MXCNTVME-1:0] active_cfeb3_event_counter;      // CFEB3 active flag sent to DMB
   wire  [MXCNTVME-1:0] active_cfeb4_event_counter;      // CFEB4 active flag sent to DMB
-
-  wire  [MXCNTVME-1:0] bx0_match_counter;      // ALCT CLCT bx0 match counter
 
 // CFEB injector RAM map 2D arrays into 1D for ALCT
 	wire	[MXCFEB-1:0]	inj_ramout_pulse;
@@ -1294,9 +1270,6 @@
 //-------------------------------------------------------------------------------------------------------------------
 // CFEB Instantiation
 //-------------------------------------------------------------------------------------------------------------------
-   wire  [5:0]         cfeb_nhits [MXCFEB-1:0];
-   wire  [MXLY-1:0]    cfeb_layers_withhits[MXCFEB-1:0];
-
 	genvar icfeb;
 	generate
 	for (icfeb=0; icfeb<=4; icfeb=icfeb+1) begin: gencfeb
@@ -1373,9 +1346,6 @@
 	.ly4hs				(cfeb_ly4hs[icfeb][MXHS-1:0]),		// Out	Decoded 1/2-strip pulses
 	.ly5hs				(cfeb_ly5hs[icfeb][MXHS-1:0]),		// Out	Decoded 1/2-strip pulses
 
-   .nhits_per_cfeb (cfeb_nhits[icfeb]),  // Out nhits per cfeb for HMT   
-   .layers_withhits_per_cfeb  (cfeb_layers_withhits[icfeb][MXLY-1:0]),// Out layers with hits for one cfeb
-
 // Status
 	.demux_tp_1st		(demux_tp_1st[icfeb]),				// Out	Demultiplexer test point first-in-time
 	.demux_tp_2nd		(demux_tp_2nd[icfeb]),				// Out	Demultiplexer test point second-in-time
@@ -1411,34 +1381,6 @@
 //-------------------------------------------------------------------------------------------------------------------
 // Pattern Finder instantiation
 //-------------------------------------------------------------------------------------------------------------------
-// 1st pattern lookup results, ccLUT,Tao
-  wire [MXBNDB - 1   : 0] hs_bnd_1st; // new bending 
-  wire [MXXKYB-1     : 0] hs_xky_1st; // new position with 1/8 precision
-  wire [MXPATC-1     : 0] hs_carry_1st; // CC code 
-  wire  [MXPIDB-1:0]  hs_run2pid_1st;
-
-  // 2nd pattern lookup results, ccLUT,Tao
-  wire [MXBNDB - 1   : 0] hs_bnd_2nd; // new bending 
-  wire [MXXKYB-1     : 0] hs_xky_2nd; // new position with 1/8 precision
-  wire [MXPATC-1     : 0] hs_carry_2nd; // CC code 
-  wire  [MXPIDB-1:0]  hs_run2pid_2nd;
-
-  reg reg_ccLUT_enable;
-  //enable CCLUT, Tao
-  `ifdef CCLUT
-  initial reg_ccLUT_enable = 1'b1;
-  `else
-  initial reg_ccLUT_enable = 1'b0;
-  `endif
-
-   wire ccLUT_enable;
-   assign ccLUT_enable = reg_ccLUT_enable;
-   wire run3_trig_df ;//  = reg_ccLUT_enable; // Run3 trigger data format
-   wire run3_daq_df  ;//  = reg_ccLUT_enable;// Run3 daq data format
-   wire run3_alct_df ;//= reg_ccLUT_enable;
-   
-
-
 	wire	[MXCFEB-1:0]	cfeb_hit;						// This CFEB has a pattern over pre-trigger threshold
 	wire	[MXCFEB-1:0]	cfeb_active;					// CFEBs marked for DMB readout
 	wire	[MXLY-1:0]		cfeb_layer_or;					// OR of hstrips on each layer
@@ -1456,126 +1398,98 @@
 	wire					hs_layer_trig;					// Layer triggered
 	wire	[MXHITB-1:0]	hs_nlayers_hit;					// Number of layers hit
 	wire	[MXLY-1:0]		hs_layer_or;					// Layer ORs
-	
-	//CCLUT is off
-  //`ifndef CCLUT
-  // assign hs_bnd_1st[MXBNDB - 1   : 0] = hs_pid_1st;
-  // assign hs_xky_1st[MXXKYB - 1   : 0] = {hs_key_1st, 2'b10};   
-  //  assign hs_carry_1st[MXPATC - 1 : 0] = 0;
-  // assign hs_bnd_2nd[MXBNDB - 1   : 0] = hs_pid_2nd;
-  // assign hs_xky_2nd[MXXKYB - 1   : 0] = {hs_key_2nd, 2'b10};
-  // assign hs_carry_2nd[MXPATC - 1 : 0] = 0;
-  // assign hs_run2pid_1st[MXPIDB-1:0]   = hs_pid_1st;
-  // assign hs_run2pid_2nd[MXPIDB-1:0]   = hs_pid_2nd;
-  //`endif
-	
-      wire       algo2016_use_dead_time_zone;         // Dead time zone switch: 0 - "old" whole chamber is dead when pre-CLCT is registered, 1 - algo2016 only half-strips around pre-CLCT are marked dead
-      wire [4:0] algo2016_dead_time_zone_size;        // Constant size of the dead time zone. NOT used.  We used the fixed dead time zone!
-      wire       algo2016_use_dynamic_dead_time_zone; // Dynamic dead time zone switch: 0 - dead time zone is set by algo2016_use_dynamic_dead_time_zone, 1 - dead time zone depends on pre-CLCT pattern ID. NOT USED, Tao
-      wire       algo2016_drop_used_clcts;            // Drop CLCTs from matching in ALCT-centric algorithm: 0 - algo2016 do NOT drop CLCTs, 1 - drop used CLCTs
-      wire       algo2016_cross_bx_algorithm;         // LCT sorting using cross BX algorithm: 0 - "old" no cross BX algorithm used, 1 - algo2016 uses cross BX algorithm, almost no effect, Tao
-      wire       algo2016_clct_use_corrected_bx;      // NOT YET IMPLEMENTED: Use median of hits for CLCT timing: 0 - "old" no CLCT timing corrections, 1 - algo2016 CLCT timing calculated based on median of hits,  NOT USED, Tao
-      wire       evenchamber;  // from VME register 0x198, 1 for even chamber and 0 for odd chamber
 
-      wire       seq_trigger_nodeadtime = 1'b0;
-
-//===============================================================
-//pattern_finder_ccLUT_tmb: real CCLUT
-//pattern_finder_ccLUT_simple: use run2 legacy pattern finding and convert run2 results into CCLUT results without using CC
-//===============================================================
-
-
-    pattern_finder upattern_finder
-    (
+	pattern_finder upattern_finder
+	(
 // Ports
-    .clock			(clock),								// In	40MHz TMB main clock
-    .clock_lac		(clock_lac),							// In	40MHz pattern finder multiplexer a/b select
-    .clock_2x		(clock_2x),								// In	80MHz TMB main clock doubled
-    .global_reset	(global_reset),							// In	1=Reset everything
+	.clock			(clock),								// In	40MHz TMB main clock
+	.clock_lac		(clock_lac),							// In	40MHz pattern finder multiplexer a/b select
+	.clock_2x		(clock_2x),								// In	80MHz TMB main clock doubled
+	.global_reset	(global_reset),							// In	1=Reset everything
 
 // CFEB Ports
-    .cfeb0_ly0hs	(cfeb_ly0hs[0][MXHS-1:0]),				// In	1/2-strip pulses
-    .cfeb0_ly1hs	(cfeb_ly1hs[0][MXHS-1:0]),				// In	1/2-strip pulses
-    .cfeb0_ly2hs	(cfeb_ly2hs[0][MXHS-1:0]),				// In	1/2-strip pulses
-    .cfeb0_ly3hs	(cfeb_ly3hs[0][MXHS-1:0]),				// In	1/2-strip pulses
-    .cfeb0_ly4hs	(cfeb_ly4hs[0][MXHS-1:0]),				// In	1/2-strip pulses
-    .cfeb0_ly5hs	(cfeb_ly5hs[0][MXHS-1:0]),				// In	1/2-strip pulses
+	.cfeb0_ly0hs	(cfeb_ly0hs[0][MXHS-1:0]),				// In	1/2-strip pulses
+	.cfeb0_ly1hs	(cfeb_ly1hs[0][MXHS-1:0]),				// In	1/2-strip pulses
+	.cfeb0_ly2hs	(cfeb_ly2hs[0][MXHS-1:0]),				// In	1/2-strip pulses
+	.cfeb0_ly3hs	(cfeb_ly3hs[0][MXHS-1:0]),				// In	1/2-strip pulses
+	.cfeb0_ly4hs	(cfeb_ly4hs[0][MXHS-1:0]),				// In	1/2-strip pulses
+	.cfeb0_ly5hs	(cfeb_ly5hs[0][MXHS-1:0]),				// In	1/2-strip pulses
 
-    .cfeb1_ly0hs	(cfeb_ly0hs[1][MXHS-1:0]),				// In	1/2-strip pulses
-    .cfeb1_ly1hs	(cfeb_ly1hs[1][MXHS-1:0]),				// In 	1/2-strip pulses
-    .cfeb1_ly2hs	(cfeb_ly2hs[1][MXHS-1:0]),				// In	1/2-strip pulses
-    .cfeb1_ly3hs	(cfeb_ly3hs[1][MXHS-1:0]),				// In	1/2-strip pulses
-    .cfeb1_ly4hs	(cfeb_ly4hs[1][MXHS-1:0]),				// In	1/2-strip pulses
-    .cfeb1_ly5hs	(cfeb_ly5hs[1][MXHS-1:0]),				// In	1/2-strip pulses
+	.cfeb1_ly0hs	(cfeb_ly0hs[1][MXHS-1:0]),				// In	1/2-strip pulses
+	.cfeb1_ly1hs	(cfeb_ly1hs[1][MXHS-1:0]),				// In 	1/2-strip pulses
+	.cfeb1_ly2hs	(cfeb_ly2hs[1][MXHS-1:0]),				// In	1/2-strip pulses
+	.cfeb1_ly3hs	(cfeb_ly3hs[1][MXHS-1:0]),				// In	1/2-strip pulses
+	.cfeb1_ly4hs	(cfeb_ly4hs[1][MXHS-1:0]),				// In	1/2-strip pulses
+	.cfeb1_ly5hs	(cfeb_ly5hs[1][MXHS-1:0]),				// In	1/2-strip pulses
 
-    .cfeb2_ly0hs	(cfeb_ly0hs[2][MXHS-1:0]),				// In	1/2-strip pulses
-    .cfeb2_ly1hs	(cfeb_ly1hs[2][MXHS-1:0]),				// In	1/2-strip pulses
-    .cfeb2_ly2hs	(cfeb_ly2hs[2][MXHS-1:0]),				// In	1/2-strip pulses
-    .cfeb2_ly3hs	(cfeb_ly3hs[2][MXHS-1:0]),				// In	1/2-strip pulses
-    .cfeb2_ly4hs	(cfeb_ly4hs[2][MXHS-1:0]),				// In 	1/2-strip pulses
-    .cfeb2_ly5hs	(cfeb_ly5hs[2][MXHS-1:0]),				// In	1/2-strip pulses
+	.cfeb2_ly0hs	(cfeb_ly0hs[2][MXHS-1:0]),				// In	1/2-strip pulses
+	.cfeb2_ly1hs	(cfeb_ly1hs[2][MXHS-1:0]),				// In	1/2-strip pulses
+	.cfeb2_ly2hs	(cfeb_ly2hs[2][MXHS-1:0]),				// In	1/2-strip pulses
+	.cfeb2_ly3hs	(cfeb_ly3hs[2][MXHS-1:0]),				// In	1/2-strip pulses
+	.cfeb2_ly4hs	(cfeb_ly4hs[2][MXHS-1:0]),				// In 	1/2-strip pulses
+	.cfeb2_ly5hs	(cfeb_ly5hs[2][MXHS-1:0]),				// In	1/2-strip pulses
 
-    .cfeb3_ly0hs	(cfeb_ly0hs[3][MXHS-1:0]),				// In	1/2-strip pulses
-    .cfeb3_ly1hs	(cfeb_ly1hs[3][MXHS-1:0]),				// In	1/2-strip pulses
-    .cfeb3_ly2hs	(cfeb_ly2hs[3][MXHS-1:0]),				// In	1/2-strip pulses
-    .cfeb3_ly3hs	(cfeb_ly3hs[3][MXHS-1:0]),				// In	1/2-strip pulses
-    .cfeb3_ly4hs	(cfeb_ly4hs[3][MXHS-1:0]),				// In	1/2-strip pulses
-    .cfeb3_ly5hs	(cfeb_ly5hs[3][MXHS-1:0]),				// In 	1/2-strip pulses
+	.cfeb3_ly0hs	(cfeb_ly0hs[3][MXHS-1:0]),				// In	1/2-strip pulses
+	.cfeb3_ly1hs	(cfeb_ly1hs[3][MXHS-1:0]),				// In	1/2-strip pulses
+	.cfeb3_ly2hs	(cfeb_ly2hs[3][MXHS-1:0]),				// In	1/2-strip pulses
+	.cfeb3_ly3hs	(cfeb_ly3hs[3][MXHS-1:0]),				// In	1/2-strip pulses
+	.cfeb3_ly4hs	(cfeb_ly4hs[3][MXHS-1:0]),				// In	1/2-strip pulses
+	.cfeb3_ly5hs	(cfeb_ly5hs[3][MXHS-1:0]),				// In 	1/2-strip pulses
 
-    .cfeb4_ly0hs	(cfeb_ly0hs[4][MXHS-1:0]),				// In	1/2-strip pulses
-    .cfeb4_ly1hs	(cfeb_ly1hs[4][MXHS-1:0]),				// In	1/2-strip pulses
-    .cfeb4_ly2hs	(cfeb_ly2hs[4][MXHS-1:0]),				// In	1/2-strip pulses
-    .cfeb4_ly3hs	(cfeb_ly3hs[4][MXHS-1:0]),				// In	1/2-strip pulses
-    .cfeb4_ly4hs	(cfeb_ly4hs[4][MXHS-1:0]),				// In	1/2-strip pulses
-    .cfeb4_ly5hs	(cfeb_ly5hs[4][MXHS-1:0]),				// In	1/2-strip pulses
+	.cfeb4_ly0hs	(cfeb_ly0hs[4][MXHS-1:0]),				// In	1/2-strip pulses
+	.cfeb4_ly1hs	(cfeb_ly1hs[4][MXHS-1:0]),				// In	1/2-strip pulses
+	.cfeb4_ly2hs	(cfeb_ly2hs[4][MXHS-1:0]),				// In	1/2-strip pulses
+	.cfeb4_ly3hs	(cfeb_ly3hs[4][MXHS-1:0]),				// In	1/2-strip pulses
+	.cfeb4_ly4hs	(cfeb_ly4hs[4][MXHS-1:0]),				// In	1/2-strip pulses
+	.cfeb4_ly5hs	(cfeb_ly5hs[4][MXHS-1:0]),				// In	1/2-strip pulses
 
 // CSC Orientation Ports
-    .csc_type			(csc_type[3:0]),					// Out	Firmware compile type
-    .csc_me1ab			(csc_me1ab),						// Out	1=ME1A or ME1B CSC type
-    .stagger_hs_csc		(stagger_hs_csc),					// Out	1=Staggered CSC, 0=non-staggered
-    .reverse_hs_csc		(reverse_hs_csc),					// Out	1=Reverse staggered CSC, non-me1
-    .reverse_hs_me1a	(reverse_hs_me1a),					// Out	1=reverse me1a hstrips prior to pattern sorting
-    .reverse_hs_me1b	(reverse_hs_me1b),					// Out	1=reverse me1b hstrips prior to pattern sorting
+	.csc_type			(csc_type[3:0]),					// Out	Firmware compile type
+	.csc_me1ab			(csc_me1ab),						// Out	1=ME1A or ME1B CSC type
+	.stagger_hs_csc		(stagger_hs_csc),					// Out	1=Staggered CSC, 0=non-staggered
+	.reverse_hs_csc		(reverse_hs_csc),					// Out	1=Reverse staggered CSC, non-me1
+	.reverse_hs_me1a	(reverse_hs_me1a),					// Out	1=reverse me1a hstrips prior to pattern sorting
+	.reverse_hs_me1b	(reverse_hs_me1b),					// Out	1=reverse me1b hstrips prior to pattern sorting
 
 // PreTrigger Ports
-    .layer_trig_en		(layer_trig_en),					// In	1=Enable layer trigger mode
-    .lyr_thresh_pretrig	(lyr_thresh_pretrig[MXHITB-1:0]),	// In	Layers hit pre-trigger threshold
-    .hit_thresh_pretrig	(hit_thresh_pretrig[MXHITB-1:0]),	// In	Hits on pattern template pre-trigger threshold
-    .pid_thresh_pretrig	(pid_thresh_pretrig[MXPIDB-1:0]),	// In	Pattern shape ID pre-trigger threshold
-    .dmb_thresh_pretrig	(dmb_thresh_pretrig[MXHITB-1:0]),	// In	Hits on pattern template DMB active-feb threshold
-    .cfeb_en			(cfeb_en[MXCFEB-1:0]),				// In	1=Enable cfeb for pre-triggering
-    .adjcfeb_dist		(adjcfeb_dist[MXKEYB-1+1:0]),		// In	Distance from key to cfeb boundary for marking adjacent cfeb as hit
-    .clct_blanking		(clct_blanking),					// In	clct_blanking=1 clears clcts with 0 hits
+	.layer_trig_en		(layer_trig_en),					// In	1=Enable layer trigger mode
+	.lyr_thresh_pretrig	(lyr_thresh_pretrig[MXHITB-1:0]),	// In	Layers hit pre-trigger threshold
+	.hit_thresh_pretrig	(hit_thresh_pretrig[MXHITB-1:0]),	// In	Hits on pattern template pre-trigger threshold
+	.pid_thresh_pretrig	(pid_thresh_pretrig[MXPIDB-1:0]),	// In	Pattern shape ID pre-trigger threshold
+	.dmb_thresh_pretrig	(dmb_thresh_pretrig[MXHITB-1:0]),	// In	Hits on pattern template DMB active-feb threshold
+	.cfeb_en			(cfeb_en[MXCFEB-1:0]),				// In	1=Enable cfeb for pre-triggering
+	.adjcfeb_dist		(adjcfeb_dist[MXKEYB-1+1:0]),		// In	Distance from key to cfeb boundary for marking adjacent cfeb as hit
+	.clct_blanking		(clct_blanking),					// In	clct_blanking=1 clears clcts with 0 hits
 
-    .cfeb_hit			(cfeb_hit[MXCFEB-1:0]),				// Out	This CFEB has a pattern over pre-trigger threshold
-    .cfeb_active		(cfeb_active[MXCFEB-1:0]),			// Out	CFEBs marked for DMB readout
+	.cfeb_hit			(cfeb_hit[MXCFEB-1:0]),				// Out	This CFEB has a pattern over pre-trigger threshold
+	.cfeb_active		(cfeb_active[MXCFEB-1:0]),			// Out	CFEBs marked for DMB readout
 
-    .cfeb_layer_trig	(cfeb_layer_trig),					// Out	Layer pretrigger
-    .cfeb_layer_or		(cfeb_layer_or[MXLY-1:0]),			// Out	OR of hstrips on each layer
-    .cfeb_nlayers_hit	(cfeb_nlayers_hit[MXHITB-1:0]),		// Out	Number of CSC layers hit
+	.cfeb_layer_trig	(cfeb_layer_trig),					// Out	Layer pretrigger
+	.cfeb_layer_or		(cfeb_layer_or[MXLY-1:0]),			// Out	OR of hstrips on each layer
+	.cfeb_nlayers_hit	(cfeb_nlayers_hit[MXHITB-1:0]),		// Out	Number of CSC layers hit
 
 // 2nd CLCT separation RAM Ports
-    .clct_sep_src		(clct_sep_src),						// In	CLCT separation source 1=vme, 0=ram
-    .clct_sep_vme		(clct_sep_vme[7:0]),				// In	CLCT separation from vme
-    .clct_sep_ram_we	(clct_sep_ram_we),					// In	CLCT separation RAM write enable
-    .clct_sep_ram_adr	(clct_sep_ram_adr[3:0]),			// In	CLCT separation RAM rw address VME
-    .clct_sep_ram_wdata	(clct_sep_ram_wdata[15:0]),			// In	CLCT separation RAM write data VME
-    .clct_sep_ram_rdata	(clct_sep_ram_rdata[15:0]),			// Out	CLCT separation RAM read  data VME
+	.clct_sep_src		(clct_sep_src),						// In	CLCT separation source 1=vme, 0=ram
+	.clct_sep_vme		(clct_sep_vme[7:0]),				// In	CLCT separation from vme
+	.clct_sep_ram_we	(clct_sep_ram_we),					// In	CLCT separation RAM write enable
+	.clct_sep_ram_adr	(clct_sep_ram_adr[3:0]),			// In	CLCT separation RAM rw address VME
+	.clct_sep_ram_wdata	(clct_sep_ram_wdata[15:0]),			// In	CLCT separation RAM write data VME
+	.clct_sep_ram_rdata	(clct_sep_ram_rdata[15:0]),			// Out	CLCT separation RAM read  data VME
 
 // CLCT Pattern-finder results
-    .hs_hit_1st			(hs_hit_1st[MXHITB-1:0]),			// Out	1st CLCT pattern hits
-    .hs_pid_1st			(hs_pid_1st[MXPIDB-1:0]),			// Out	1st CLCT pattern ID
-    .hs_key_1st			(hs_key_1st[MXKEYBX-1:0]),			// Out	1st CLCT key 1/2-strip
+	.hs_hit_1st			(hs_hit_1st[MXHITB-1:0]),			// Out	1st CLCT pattern hits
+	.hs_pid_1st			(hs_pid_1st[MXPIDB-1:0]),			// Out	1st CLCT pattern ID
+	.hs_key_1st			(hs_key_1st[MXKEYBX-1:0]),			// Out	1st CLCT key 1/2-strip
 
-    .hs_hit_2nd			(hs_hit_2nd[MXHITB-1:0]),			// Out	2nd CLCT pattern hits
-    .hs_pid_2nd			(hs_pid_2nd[MXPIDB-1:0]),			// Out	2nd CLCT pattern ID
-    .hs_key_2nd			(hs_key_2nd[MXKEYBX-1:0]),			// Out	2nd CLCT key 1/2-strip
-    .hs_bsy_2nd			(hs_bsy_2nd),						// Out	2nd CLCT busy, logic error indicator
+	.hs_hit_2nd			(hs_hit_2nd[MXHITB-1:0]),			// Out	2nd CLCT pattern hits
+	.hs_pid_2nd			(hs_pid_2nd[MXPIDB-1:0]),			// Out	2nd CLCT pattern ID
+	.hs_key_2nd			(hs_key_2nd[MXKEYBX-1:0]),			// Out	2nd CLCT key 1/2-strip
+	.hs_bsy_2nd			(hs_bsy_2nd),						// Out	2nd CLCT busy, logic error indicator
 
-    .hs_layer_trig		(hs_layer_trig),					// Out	Layer triggered
-    .hs_nlayers_hit		(hs_nlayers_hit[MXHITB-1:0]),		// Out	Number of layers hit
-    .hs_layer_or		(hs_layer_or[MXLY-1:0])				// Out	Layer ORs
-    );
+	.hs_layer_trig		(hs_layer_trig),					// Out	Layer triggered
+	.hs_nlayers_hit		(hs_nlayers_hit[MXHITB-1:0]),		// Out	Number of layers hit
+	.hs_layer_or		(hs_layer_or[MXLY-1:0])				// Out	Layer ORs
+	);
 
 //-------------------------------------------------------------------------------------------------------------------
 //	Sequencer Instantiation
@@ -1584,15 +1498,10 @@
 	wire	[MXTBIN-1:0]	cfeb_tbin;
 	wire	[7:0]			cfeb_rawhits;
 
-
 	wire	[MXCLCT-1:0]	clct0_xtmb;
 	wire	[MXCLCT-1:0]	clct1_xtmb;
 	wire	[MXCLCTC-1:0]	clctc_xtmb;				// Common to CLCT0/1 to TMB
 	wire	[MXCFEB-1:0]	clctf_xtmb;				// Active cfeb list to TMB
-        wire [MXBNDB - 1   : 0]   clct0_bnd_xtmb; // new bending
-        wire [MXXKYB-1     : 0]   clct0_xky_xtmb; // new position with 1/8 precision
-        wire [MXBNDB - 1   : 0]   clct1_bnd_xtmb; // new bending
-        wire [MXXKYB-1     : 0]   clct1_xky_xtmb; // new position with 1/8 precision
 
 	wire	[MXBADR-1:0]	wr_adr_xtmb;			// Buffer write address to TMB
 	wire	[MXBADR-1:0]	wr_adr_rtmb;			// Buffer write address at TMB matching time
@@ -1647,12 +1556,6 @@
 	wire	[MXCLCTC-1:0]	clctc_vme;
 	wire	[MXCFEB-1:0]	clctf_vme;
 
-  wire [MXBNDB - 1   : 0] clct0_vme_bnd; // new bending 
-  wire [MXXKYB-1     : 0] clct0_vme_xky; // new position with 1/8 precision
-
-  wire [MXBNDB - 1   : 0] clct1_vme_bnd; // new bending 
-  wire [MXXKYB-1     : 0] clct1_vme_xky; // new position with 1/8 precision
-
 	wire	[MXRAMADR-1:0]	dmb_adr;
 	wire	[MXRAMDATA-1:0]	dmb_wdata;
 	wire	[MXRAMDATA-1:0]	dmb_rdata;
@@ -1686,11 +1589,11 @@
 
 	wire [MXTBIN-1:0]		fifo_tbins_cfeb;		// Number FIFO time bins to read out
 	wire [MXTBIN-1:0]		fifo_tbins_rpc;			// Number FIFO time bins to read out
-	//KS remove rpc and miniscope 2022 wire [MXTBIN-1:0]		fifo_tbins_mini;		// Number FIFO time bins to read out
+	wire [MXTBIN-1:0]		fifo_tbins_mini;		// Number FIFO time bins to read out
 
 	wire [MXTBIN-1:0]		fifo_pretrig_cfeb;		// Number FIFO time bins before pretrigger
 	wire [MXTBIN-1:0]		fifo_pretrig_rpc;		// Number FIFO time bins before pretrigger
-	//KS remove rpc and miniscope 2022 wire [MXTBIN-1:0]		fifo_pretrig_mini;		// Number FIFO time bins before pretrigger
+	wire [MXTBIN-1:0]		fifo_pretrig_mini;		// Number FIFO time bins before pretrigger
 
 	wire [MXBADR-1:0]		buf_pop_adr;			// Address of read buffer to release
 	wire [MXBADR-1:0]		buf_push_adr;			// Address of write buffer to allocate	
@@ -1732,10 +1635,10 @@
 	wire	[15:0]			scp_rdata;
 
 // Miniscope
-//KS remove rpc and miniscope 2022	wire	[RAM_WIDTH*2-1:0]	mini_rdata;			// FIFO dump miniscope
-//KS remove rpc and miniscope 2022	wire	[RAM_WIDTH*2-1:0]	fifo_wdata_mini;	// FIFO RAM write data
-//KS remove rpc and miniscope 2022	wire	[RAM_ADRB-1:0]		rd_mini_offset;		// RAM address rd_fifo_adr offset for miniscope read out
-//KS remove rpc and miniscope 2022	wire	[RAM_ADRB-1:0]		wr_mini_offset;		// RAM address offset for miniscope write
+	wire	[RAM_WIDTH*2-1:0]	mini_rdata;			// FIFO dump miniscope
+	wire	[RAM_WIDTH*2-1:0]	fifo_wdata_mini;	// FIFO RAM write data
+	wire	[RAM_ADRB-1:0]		rd_mini_offset;		// RAM address rd_fifo_adr offset for miniscope read out
+	wire	[RAM_ADRB-1:0]		wr_mini_offset;		// RAM address offset for miniscope write
 
 // Blockedbits
 	wire	[MXCFEB-1:0]	rd_list_bcb;			// List of CFEBs to read out
@@ -1767,14 +1670,6 @@
 	wire	[MXBDATA-1:0]	deb_buf_push_data;		// Queue push data at last push
 	wire	[MXBDATA-1:0]	deb_buf_pop_data;		// Queue pop  data at last pop
 
-    //HMT
-    wire [MXHMTB-1:0] hmt_anode;// anode hmt bits
-
-    wire hmt_anode_alct_match;
-    wire              tmb_pulse_hmt_only; // tmb pulse is from HMT
-    wire              tmb_keep_hmt_only; // tmb keep is from HMT
-
-
 	sequencer usequencer
 	(
 // CCB
@@ -1795,11 +1690,6 @@
 	.alct_active_feb		(alct_active_feb),				// In	ALCT Pattern trigger
 	.alct0_valid			(alct0_valid),					// In	ALCT has valid LCT
 	.alct1_valid			(alct1_valid),					// In	ALCT has valid LCT
-
-    //add anode hmt to get anode hmt at pretCLCT and CLCT  
-    .hmt_anode           (hmt_anode),   //In hmt bits
-	//.alct_delay				(alct_delay[3:0]),				// In	Delay ALCT for CLCT match window
-	//.clct_window			(clct_window[3:0]),				// In	CLCT match window width
 
 // External Triggers
 	.alct_adb_pulse_sync	(alct_adb_pulse_sync),			// In	ADB Test pulse trigger
@@ -1866,24 +1756,15 @@
 	.cfeb_layer_or			(cfeb_layer_or[MXLY-1:0]),			// In	OR of hstrips on each layer
 	.cfeb_nlayers_hit		(cfeb_nlayers_hit[MXHITB-1:0]),		// In	Number of CSC layers hit
 
-        //Sequencer HMT results                                                                                                                                        
 // Pattern Finder CLCT results
 	.hs_hit_1st				(hs_hit_1st[MXHITB-1:0]),			// In	1st CLCT pattern hits
 	.hs_pid_1st				(hs_pid_1st[MXPIDB-1:0]),			// In	1st CLCT pattern ID
 	.hs_key_1st				(hs_key_1st[MXKEYBX-1:0]),			// In	1st CLCT key 1/2-strip
-        //.hs_bnd_1st (hs_bnd_1st[MXBNDB - 1   : 0]),
-        //.hs_xky_1st (hs_xky_1st[MXXKYB-1 : 0]),
-        //.hs_carry_1st (hs_carry_1st[MXPATC-1:0]),
-        //.hs_run2pid_1st (hs_run2pid_1st[MXPIDB-1:0]),  // In  1st CLCT pattern ID
 
 	.hs_hit_2nd				(hs_hit_2nd[MXHITB-1:0]),			// In	2nd CLCT pattern hits
 	.hs_pid_2nd				(hs_pid_2nd[MXPIDB-1:0]),			// In	2nd CLCT pattern ID
 	.hs_key_2nd				(hs_key_2nd[MXKEYBX-1:0]),			// In	2nd CLCT key 1/2-strip
 	.hs_bsy_2nd				(hs_bsy_2nd),						// In	2nd CLCT busy, logic error indicator
-        //.hs_bnd_2nd (hs_bnd_2nd[MXBNDB - 1   : 0]),
-        //.hs_xky_2nd (hs_xky_2nd[MXXKYB-1 : 0]),
-        //.hs_carry_2nd (hs_carry_2nd[MXPATC-1:0]),
-        //.hs_run2pid_2nd (hs_run2pid_2nd[MXPIDB-1:0]),  // In  1st CLCT pattern ID
 
 	.hs_layer_trig			(hs_layer_trig),					// In	Layer triggered
 	.hs_nlayers_hit			(hs_nlayers_hit[MXHITB-1:0]),		// In	Number of layers hit
@@ -1965,7 +1846,6 @@
 
 	.seq_trigger			(seq_trigger),						// Out	Sequencer requests L1A from CCB
 	.sequencer_state		(sequencer_state[11:0]),			// Out	Sequencer state for vme
-        .seq_trigger_nodeadtime (seq_trigger_nodeadtime),  //IN no dead time for seq-trigger
 
 	.event_clear_vme		(event_clear_vme),					// In	Event clear for aff,clct,mpc vme diagnostic registers
 	.clct0_vme				(clct0_vme[MXCLCT-1:0]),			// Out	First  CLCT
@@ -1977,11 +1857,6 @@
 	.bxn_clct_vme			(bxn_clct_vme[MXBXN-1:0]),			// Out	CLCT BXN at pre-trigger
 	.bxn_l1a_vme			(bxn_l1a_vme[MXBXN-1:0]),			// Out	CLCT BXN at L1A
 
-  //.clct0_vme_bnd   (clct0_vme_bnd[MXBNDB - 1   : 0]), // Out, clct0 new bending 
- // .clct0_vme_xky   (clct0_vme_xky[MXXKYB-1 : 0]),     // Out, clct0 new position with 1/8 strip resolution
-
- // .clct1_vme_bnd   (clct1_vme_bnd[MXBNDB - 1   : 0]),  // out 
-  //.clct1_vme_xky   (clct1_vme_xky[MXXKYB-1 : 0]),     // out
 // RPC VME Configuration Ports
 	.rpc_exists				(rpc_exists[MXRPC-1:0]),			// In	RPC Readout list
 	.rpc_read_enable		(rpc_read_enable),					// In	1 Enable RPC Readout
@@ -2114,15 +1989,8 @@
 	.clct1_xtmb				(clct1_xtmb[MXCLCT-1:0]),		// Out	Second CLCT
 	.clctc_xtmb				(clctc_xtmb[MXCLCTC-1:0]),		// Out	Common to CLCT0/1 to TMB
 	.clctf_xtmb				(clctf_xtmb[MXCFEB-1:0]),		// Out	Active cfeb list to TMB
-        //CCLUT, Tao  
-        .clct0_bnd_xtmb   (clct0_bnd_xtmb[MXBNDB - 1   : 0]),
-        .clct0_xky_xtmb   (clct0_xky_xtmb[MXXKYB-1 : 0]),
-        .clct1_bnd_xtmb   (clct1_bnd_xtmb[MXBNDB - 1   : 0]),
-        .clct1_xky_xtmb   (clct1_xky_xtmb[MXXKYB-1 : 0]),
-
 	.bx0_xmpc				(bx0_xmpc),						// Out	bx0 to tmb aligned with clct0/1
 	.bx0_match				(bx0_match),					// In	ALCT bx0 and CLCT bx0 match in time
-	.bx0_match2				(bx0_match2),					// In	ALCT bx0 and CLCT bx0 match in time
 
 	.tmb_trig_pulse			(tmb_trig_pulse),				// In	ALCT or CLCT or both triggered
 	.tmb_trig_keep			(tmb_trig_keep),				// In	ALCT or CLCT or both triggered, and trigger is allowed
@@ -2156,17 +2024,6 @@
 	.tmb_alct1				(tmb_alct1[10:0]),				// In	ALCT second best muon latched at trigger
 	.tmb_alctb				(tmb_alctb[4:0]),				// In	ALCT bxn latched at trigger
 	.tmb_alcte				(tmb_alcte[1:0]),				// In	ALCT ecc error syndrome latched at trigger
-
-    .hmt_anode_alct_match (hmt_anode_alct_match),  //In anode hmt and alct vpf match
-    .tmb_pulse_hmt_only   (tmb_pulse_hmt_only),       // In tmb pulse is from HMT
-    .tmb_keep_hmt_only    (tmb_keep_hmt_only),        // In tmb keep is from HMT
-
-
-////Enable CCLUT or not
-        .ccLUT_enable       (ccLUT_enable),  // In
-        .run3_trig_df       (run3_trig_df), // input, enable run3 trigger format or not
-        .run3_daq_df        (run3_daq_df),  // input, enable run3 daq format or not
-        .run3_alct_df       (run3_alct_df),  // input, enable run3 daq format or not
 
 // MPC Status
 	.mpc_frame_ff			(mpc_frame_ff),					// In	MPC frame latch strobe
@@ -2215,18 +2072,18 @@
 	.scp_rdata				(scp_rdata[15:0]),				// Out	Recorded channel data
 
 // Miniscope
-//KS remove rpc and miniscope 2022	.mini_read_enable		(mini_read_enable),					// In	Enable Miniscope readout
-//KS remove rpc and miniscope 2022	.mini_fifo_busy			(mini_fifo_busy),					// In	Readout busy sending data to sequencer, goes down 1bx early
-//KS remove rpc and miniscope 2022	.mini_first_frame		(mini_first_frame),					// In	First frame valid 2bx after rd_start
-//KS remove rpc and miniscope 2022	.mini_last_frame		(mini_last_frame),					// In	Last frame valid 1bx after busy goes down
-//KS remove rpc and miniscope 2022	.mini_rdata				(mini_rdata[RAM_WIDTH*2-1:0]),		// In	FIFO dump miniscope
-//KS remove rpc and miniscope 2022	.fifo_wdata_mini		(fifo_wdata_mini[RAM_WIDTH*2-1:0]),	// Out	Miniscope FIFO RAM write data
-//KS remove rpc and miniscope 2022	.wr_mini_offset			(wr_mini_offset[RAM_ADRB-1:0]),		// Out	RAM address offset for miniscope write
+	.mini_read_enable		(mini_read_enable),					// In	Enable Miniscope readout
+	.mini_fifo_busy			(mini_fifo_busy),					// In	Readout busy sending data to sequencer, goes down 1bx early
+	.mini_first_frame		(mini_first_frame),					// In	First frame valid 2bx after rd_start
+	.mini_last_frame		(mini_last_frame),					// In	Last frame valid 1bx after busy goes down
+	.mini_rdata				(mini_rdata[RAM_WIDTH*2-1:0]),		// In	FIFO dump miniscope
+	.fifo_wdata_mini		(fifo_wdata_mini[RAM_WIDTH*2-1:0]),	// Out	Miniscope FIFO RAM write data
+	.wr_mini_offset			(wr_mini_offset[RAM_ADRB-1:0]),		// Out	RAM address offset for miniscope write
 
 // Mini Sequencer Readout Control
-//KS remove rpc and miniscope 2022	.rd_start_mini			(rd_start_mini),					// Out	Start readout sequence
-//KS remove rpc and miniscope 2022	.rd_abort_mini			(rd_abort_mini),					// Out	Cancel readout
-//KS remove rpc and miniscope 2022	.rd_mini_offset			(rd_mini_offset[RAM_ADRB-1:0]),		// Out	RAM address rd_fifo_adr offset for miniscope read out
+	.rd_start_mini			(rd_start_mini),					// Out	Start readout sequence
+	.rd_abort_mini			(rd_abort_mini),					// Out	Cancel readout
+	.rd_mini_offset			(rd_mini_offset[RAM_ADRB-1:0]),		// Out	RAM address rd_fifo_adr offset for miniscope read out
 
 // Trigger/Readout Counters
 	.cnt_all_reset			(cnt_all_reset),					// In	Trigger/Readout counter reset
@@ -2288,12 +2145,6 @@
 	.event_counter63		(event_counter63[MXCNTVME-1:0]),	// Out
 	.event_counter64		(event_counter64[MXCNTVME-1:0]),	// Out
 	.event_counter65		(event_counter65[MXCNTVME-1:0]),	// Out
-    //HMT counters
-	.event_counter96		(event_counter96[MXCNTVME-1:0]),	// Out
-	.event_counter97		(event_counter97[MXCNTVME-1:0]),	// Out
-	.event_counter103		(event_counter103[MXCNTVME-1:0]),	// Out
-	.event_counter116		(event_counter116[MXCNTVME-1:0]),	// Out
-	.event_counter117		(event_counter117[MXCNTVME-1:0]),	// Out
 
 // CLCT pre-trigger coincidence counters
   .preClct_l1a_counter   (preClct_l1a_counter[MXCNTVME-1:0]),  // Out
@@ -2306,8 +2157,6 @@
   .active_cfeb2_event_counter      (active_cfeb2_event_counter[MXCNTVME-1:0]),      // Out
   .active_cfeb3_event_counter      (active_cfeb3_event_counter[MXCNTVME-1:0]),      // Out
   .active_cfeb4_event_counter      (active_cfeb4_event_counter[MXCNTVME-1:0]),      // Out
-
-    .bx0_match_counter  (bx0_match_counter),     // Out
 
 // Header Counters
 	.hdr_clear_on_resync	(hdr_clear_on_resync),				// In	Clear header counters on ttc_resync
@@ -2323,7 +2172,7 @@
 	.perr_pulse				(perr_pulse),						// In	Parity error pulse for counting
 	.perr_cfeb_ff			(perr_cfeb_ff[MXCFEB-1:0]),			// In	CFEB RAM parity error, latched
 	.perr_rpc_ff			(perr_rpc_ff),						// In	RPC  RAM parity error, latched
-//KS remove rpc and miniscope 2022	.perr_mini_ff			(perr_mini_ff),						// In	Mini RAM parity error, latched
+	.perr_mini_ff			(perr_mini_ff),						// In	Mini RAM parity error, latched
 	.perr_ff				(perr_ff),							// In	Parity error summary,  latched
 
 // VME debug register latches
@@ -2336,7 +2185,6 @@
 // Sump
 	.sequencer_sump			(sequencer_sump)					// Out	Unused signals
 	);
-
 
 //-------------------------------------------------------------------------------------------------------------------
 //	RPC Instantiation
@@ -2375,7 +2223,6 @@
 // Status
 	wire	[4:0]			parity_err_rpc;					// Raw hits RAM parity error detected
 
-/*KS remove rpc and miniscope 2022
 	rpc	urpc
 	(
 // RAT Module Signals
@@ -2453,8 +2300,7 @@
 // Sump
 	.rpc_sump				(rpc_sump)						// Out	Unused signals
 	);
-*/
-/* KS remove rpc and miniscope 2022
+
 //-------------------------------------------------------------------------------------------------------------------
 //	Miniscope Instantiation
 //-------------------------------------------------------------------------------------------------------------------
@@ -2484,7 +2330,6 @@
 // Sump
 	.mini_sump				(mini_sump)							// Out	Unused signals
 	);
-*/	
 
 //-------------------------------------------------------------------------------------------------------------------
 //	Buffer Write Control Instantiation:	Controls CLCT + RPC raw hits RAM write-mode logic
@@ -2556,7 +2401,7 @@
 	.fifo_sel_rpc		(fifo_sel_rpc[0:0]),				// Out	FIFO RAM read slice address 0-1
 
 // Miniscpe FIFO RAM Ports
-//KS remove rpc and miniscope 2022	.fifo_radr_mini		(fifo_radr_mini[RAM_ADRB-1:0]),		// Out	FIFO RAM read address
+	.fifo_radr_mini		(fifo_radr_mini[RAM_ADRB-1:0]),		// Out	FIFO RAM read address
 
 // CFEB Raw Hits Data Ports
 	.fifo0_rdata_cfeb	(fifo_rdata[0][RAM_WIDTH-1:0]),		// In	FIFO RAM read data
@@ -2577,7 +2422,7 @@
 	.fifo1_rdata_rpc	(fifo1_rdata_rpc[RAM_WIDTH-1+4:0]),	// In	FIFO RAM read data, rpc
 
 // Miniscope Data Ports
-//KS remove rpc and miniscope 2022	.fifo_rdata_mini	(fifo_rdata_mini[RAM_WIDTH*2-1:0]),	// In	FIFO RAM read data
+	.fifo_rdata_mini	(fifo_rdata_mini[RAM_WIDTH*2-1:0]),	// In	FIFO RAM read data
 
 // CLCT VME Configuration Ports
 	.fifo_tbins_cfeb	(fifo_tbins_cfeb[MXTBIN-1:0]),		// In	Number CFEB FIFO time bins to read out
@@ -2588,9 +2433,9 @@
 	.fifo_pretrig_rpc	(fifo_pretrig_rpc[MXTBIN-1:0]),		// In	Number RPC  FIFO time bins before pretrigger
 
 // Minisocpe VME Configuration Ports
-//KS remove rpc and miniscope 2022	.mini_tbins_word	(mini_tbins_word),					// In	Insert tbins and pretrig tbins in 1st word
-//KS remove rpc and miniscope 2022	.fifo_tbins_mini	(fifo_tbins_mini[MXTBIN-1:0]),		// In	Number Mini FIFO time bins to read out
-//KS remove rpc and miniscope 2022	.fifo_pretrig_mini	(fifo_pretrig_mini[MXTBIN-1:0]),	// In	Number Mini FIFO time bins before pretrigger
+	.mini_tbins_word	(mini_tbins_word),					// In	Insert tbins and pretrig tbins in 1st word
+	.fifo_tbins_mini	(fifo_tbins_mini[MXTBIN-1:0]),		// In	Number Mini FIFO time bins to read out
+	.fifo_pretrig_mini	(fifo_pretrig_mini[MXTBIN-1:0]),	// In	Number Mini FIFO time bins before pretrigger
 
 // CFEB Sequencer Readout Control
 	.rd_start_cfeb		(rd_start_cfeb),					// In	Initiates a FIFO readout
@@ -2613,9 +2458,9 @@
 	.rd_rpc_offset		(rd_rpc_offset[RAM_ADRB-1:0]),		// In	RAM address rd_fifo_adr offset for rpc read out
 
 // Mini Sequencer Readout Control
-//KS remove rpc and miniscope 2022	.rd_start_mini		(rd_start_mini),					// In	Start readout sequence
-//KS remove rpc and miniscope 2022	.rd_abort_mini		(rd_abort_mini),					// In	Cancel readout
-//KS remove rpc and miniscope 2022	.rd_mini_offset		(rd_mini_offset[RAM_ADRB-1:0]),		// In	RAM address rd_fifo_adr offset for miniscope read out
+	.rd_start_mini		(rd_start_mini),					// In	Start readout sequence
+	.rd_abort_mini		(rd_abort_mini),					// In	Cancel readout
+	.rd_mini_offset		(rd_mini_offset[RAM_ADRB-1:0]),		// In	RAM address rd_fifo_adr offset for miniscope read out
 
 // CFEB Sequencer Frame Output
 	.cfeb_first_frame	(cfeb_first_frame),					// Out	First frame valid 2bx after rd_start
@@ -2638,13 +2483,13 @@
 	.rpc_adr			(rpc_adr[MXRPCB-1:0]),				// Out	FIFO dump RPC ID
 	.rpc_tbinbxn		(rpc_tbinbxn[MXTBIN-1:0]),			// Out	FIFO dump RPC tbin or bxn for DMB
 	.rpc_rawhits		(rpc_rawhits[7:0]),					// Out	FIFO dump RPC pad hits, 8 of 16 per cycle
-	.rpc_fifo_busy		(rpc_fifo_busy)					// Out	Readout busy sending data to sequencer, goes down 1bx early
+	.rpc_fifo_busy		(rpc_fifo_busy),					// Out	Readout busy sending data to sequencer, goes down 1bx early
 
 // Mini Sequencer Frame Output
-//KS remove rpc and miniscope 2022	.mini_first_frame	(mini_first_frame),					// Out	First frame valid 2bx after rd_start
-//KS remove rpc and miniscope 2022	.mini_last_frame	(mini_last_frame),					// Out	Last frame valid 1bx after busy goes down
-//KS remove rpc and miniscope 2022	.mini_rdata			(mini_rdata[RAM_WIDTH*2-1:0]),		// Out	FIFO dump miniscope
-//KS remove rpc and miniscope 2022	.mini_fifo_busy		(mini_fifo_busy)					// Out	Readout busy sending data to sequencer, goes down 1bx early
+	.mini_first_frame	(mini_first_frame),					// Out	First frame valid 2bx after rd_start
+	.mini_last_frame	(mini_last_frame),					// Out	Last frame valid 1bx after busy goes down
+	.mini_rdata			(mini_rdata[RAM_WIDTH*2-1:0]),		// Out	FIFO dump miniscope
+	.mini_fifo_busy		(mini_fifo_busy)					// Out	Readout busy sending data to sequencer, goes down 1bx early
 	);
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -2664,7 +2509,7 @@
 	.parity_err_cfeb3	(parity_err_cfeb[3][MXLY-1:0]),	// In	CFEB raw hits RAM parity errors
 	.parity_err_cfeb4	(parity_err_cfeb[4][MXLY-1:0]),	// In	CFEB raw hits RAM parity errors
 	.parity_err_rpc		(parity_err_rpc[4:0]),			// In	RPC  raw hits RAM parity errors
-//KS remove rpc and miniscope 2022	.parity_err_mini	(parity_err_mini[1:0]),			// In	Miniscope     RAM parity errors
+	.parity_err_mini	(parity_err_mini[1:0]),			// In	Miniscope     RAM parity errors
 
 // Raw hits RAM control
 	.fifo_wen			(fifo_wen),						// In	1=Write enable FIFO RAM
@@ -2672,13 +2517,13 @@
 // Parity summary to VME
 	.perr_cfeb			(perr_cfeb[MXCFEB-1:0]),		// Out	CFEB RAM parity error
 	.perr_rpc			(perr_rpc),						// Out	RPC  RAM parity error
-//KS remove rpc and miniscope 2022	.perr_mini			(perr_mini),					// Out	Mini RAM parity error
+	.perr_mini			(perr_mini),					// Out	Mini RAM parity error
 	.perr_en			(perr_en),						// Out	Parity error latch enabled
 	.perr				(perr),							// Out	Parity error summary		
 	.perr_pulse			(perr_pulse),					// Out	Parity error pulse for counting
 	.perr_cfeb_ff		(perr_cfeb_ff[MXCFEB-1:0]),		// Out	CFEB RAM parity error, latched
 	.perr_rpc_ff		(perr_rpc_ff),					// Out	RPC  RAM parity error, latched
-//KS remove rpc and miniscope 2022	.perr_mini_ff		(perr_mini_ff),					// Out	Mini RAM parity error, latched
+	.perr_mini_ff		(perr_mini_ff),					// Out	Mini RAM parity error, latched
 	.perr_ff			(perr_ff),						// Out	Parity error summary,  latched
 	.perr_ram_ff		(perr_ram_ff[48:0])				// Out	Mapped bad parity RAMs, 30 cfebs, 5 rpcs, 2 miniscope
 	);
@@ -2718,7 +2563,6 @@
 	.alct_bx0_rx		(alct_bx0_rx),					// In	ALCT bx0 received
 	.alct_ecc_err		(alct_ecc_err[1:0]),			// In	ALCT ecc syndrome code
 
-    .hmt_anode          (hmt_anode),  //Out hmt bits
 // TMB-Sequencer Pipelines
 	.wr_adr_xtmb		(wr_adr_xtmb[MXBADR-1:0]),		// In	Buffer write address after drift time
 	.wr_adr_rtmb		(wr_adr_rtmb[MXBADR-1:0]),		// Out	Buffer write address at TMB matching time
@@ -2739,16 +2583,8 @@
 	.clct0_xtmb			(clct0_xtmb[MXCLCT-1:0]),		// In	First  CLCT
 	.clct1_xtmb			(clct1_xtmb[MXCLCT-1:0]),		// In	Second CLCT
 	.clctc_xtmb			(clctc_xtmb[MXCLCTC-1:0]),		// In	Common to CLCT0/1 to TMB
-	.clctf_xtmb			(clctf_xtmb[MXCFEB-1:0]),		// In	Active cfeb list to TMB  .clct0_qlt_xtmb   (clct0_qlt_xtmb[MXQLTB - 1   : 0]), //In
-        //CCLUT, Tao 
-      .clct0_bnd_xtmb   (clct0_bnd_xtmb[MXBNDB - 1   : 0]), //In
-      .clct0_xky_xtmb   (clct0_xky_xtmb[MXXKYB-1 : 0]),    //In
-      .clct1_bnd_xtmb   (clct1_bnd_xtmb[MXBNDB - 1   : 0]),  // In
-      .clct1_xky_xtmb   (clct1_xky_xtmb[MXXKYB-1 : 0]),   // In 
-	
+	.clctf_xtmb			(clctf_xtmb[MXCFEB-1:0]),		// In	Active cfeb list to TMB
 	.bx0_xmpc			(bx0_xmpc),						// In	bx0 to mpc
-
-
 
 	.tmb_trig_pulse		(tmb_trig_pulse),				// Out	ALCT or CLCT or both triggered
 	.tmb_trig_keep		(tmb_trig_keep),				// Out	ALCT or CLCT or both triggered, and trigger is allowed
@@ -2782,17 +2618,6 @@
 	.tmb_alct1			(tmb_alct1[10:0]),				// Out	ALCT second best muon latched at trigger
 	.tmb_alctb			(tmb_alctb[4:0]),				// Out	ALCT bxn latched at trigger
 	.tmb_alcte			(tmb_alcte[1:0]),				// Out	ALCT ecc error syndrome latched at trigger
-
-    .hmt_anode_alct_match (hmt_anode_alct_match),  //Out anode hmt and alct vpf match
-    .tmb_pulse_hmt_only   (tmb_pulse_hmt_only),       // Out tmb pulse is from HMT
-    .tmb_keep_hmt_only    (tmb_keep_hmt_only),        // Out tmb keep is from HMT
-
-
-    //Enable CCLUT or not
-    //.ccLUT_enable       (ccLUT_enable),  // In
-    .run3_trig_df       (run3_trig_df), // output, enable run3 trigger format or not
-     .run3_alct_df       (run3_alct_df),  // input, enable run3 daq format or not
-    //.run3_daq_df        (run3_daq_df),  // output, enable run3 daq format or not
 
 // MPC Status
 	.mpc_frame_ff		(mpc_frame_ff),					// Out	MPC frame latch strobe
@@ -2832,7 +2657,6 @@
 	.alct_bx0_enable	(alct_bx0_enable),				// In	Enable using alct bx0, else copy clct bx0
 	.bx0_vpf_test		(bx0_vpf_test),					// In	Sets clct_bx0=lct0_vpf for bx0 alignment tests
 	.bx0_match			(bx0_match),					// Out	ALCT bx0 and CLCT bx0 match in time
-	.bx0_match2			(bx0_match2),					// Out	ALCT bx0 and CLCT bx0 match in time
 
 	.mpc_rx_delay		(mpc_rx_delay[MXMPCDLY-1:0]),	// In	MPC response delay
 	.mpc_tx_delay		(mpc_tx_delay[MXMPCDLY-1:0]),	// In	MPC transmit delay
@@ -2895,8 +2719,7 @@
 	gp_io_[3]	<= 1'bz;
 	end
 	else begin
-//KS remove rpc and miniscope 2022
-	gp_io_[0]	<= 1;				// Out	RAT dsn for debug		jtag_fgpa0 tdo (out) shunted to gp_io1, usually
+	gp_io_[0]	<= rat_sn_out;				// Out	RAT dsn for debug		jtag_fgpa0 tdo (out) shunted to gp_io1, usually
 	gp_io_[1]	<= alct_crc_err_tp;			// Out	CRC Error test point	jtag_fpga1 tdi (in) 
 	gp_io_[2]	<= alct_vpf_tp;				// Out	Timing test point		jtag_fpga2 tms (in)
 	gp_io_[3]	<= clct_window_tp;			// Out	Timing test point		jtag_fpga3 tck (in)
@@ -2992,9 +2815,6 @@
 	defparam uvme.ALCT_MUONIC		= `ALCT_MUONIC;				// Floats ALCT board  in clock-space with independent time-of-flight delay
 	defparam uvme.CFEB_MUONIC		= `CFEB_MUONIC;				// Floats CFEB boards in clock-space with independent time-of-flight delay
 	defparam uvme.CCB_BX0_EMULATOR	= `CCB_BX0_EMULATOR;		// Turns on bx0 emulator at power up, must be 0 for all CERN versions
-    defparam uvme.VERSION_FORMAT   = `VERSION_FORMAT;
-    defparam uvme.VERSION_MAJOR    = `VERSION_MAJOR;
-    defparam uvme.VERSION_MINOR    = `VERSION_MINOR;
 
 	vme uvme
 	(
@@ -3122,7 +2942,7 @@
 	.mez_sn					(mez_sn),						// Bi	Mezzanine serial number
 	.tmb_sn					(tmb_sn),						// Bi	TMB serial number
 	.rpc_dsn				(rpc_dsn),						// In	RAT serial number, in  = rpc_dsn;
-//KS remove rpc and miniscope 2022	.rat_sn_out				(rat_sn_out),					// Out	RAT serial number, out = rpc_posneg
+	.rat_sn_out				(rat_sn_out),					// Out	RAT serial number, out = rpc_posneg
 	.rat_dsn_en				(rat_dsn_en),					// Out	RAT dsn enable
 
 // Clock DCM lock status
@@ -3279,11 +3099,6 @@
 	.pid_thresh_pretrig		(pid_thresh_pretrig[MXPIDB-1:0]),	// Out	Pattern shape ID pre-trigger threshold
 	.dmb_thresh_pretrig		(dmb_thresh_pretrig[MXHITB-1:0]),	// Out	Hits on pattern template DMB active-feb threshold
 	.adjcfeb_dist			(adjcfeb_dist[MXKEYB-1+1:0]),		// Out	Distance from key to cfeb boundary for marking adjacent cfeb as hit
-    ////Enable CCLUT or not
-        .ccLUT_enable       (ccLUT_enable),  // In
-      .run3_trig_df       (run3_trig_df), // output, enable run3 trigger format or not
-      .run3_daq_df        (run3_daq_df),  // output, enable run3 daq format or not
-      .run3_alct_df       (run3_alct_df),  // input, enable run3 daq format or not
 
 // CFEB Ports: Hot Channel Mask
 	.cfeb0_ly0_hcm			(cfeb_ly0_hcm[0][MXDS-1:0]),	// Out	1=enable DiStrip
@@ -3456,13 +3271,6 @@
 	.bxn_alct_vme			(bxn_alct_vme[4:0]),				// In	ALCT BXN at alct valid pattern flag
 	.clct_bx0_sync_err		(clct_bx0_sync_err),				// In	Sync error: BXN counter==0 did not match bx0
 
-        //CCLUT, Tao
-
-      //.clct0_vme_bnd   (clct0_vme_bnd[MXBNDB - 1   : 0]), // In clct0 new bending 
-      //.clct0_vme_xky   (clct0_vme_xky[MXXKYB-1 : 0]),     // In clct0 new key position with 1/8 strip resolution
-     // .clct1_vme_bnd   (clct1_vme_bnd[MXBNDB - 1   : 0]), // In 
-      //.clct1_vme_xky   (clct1_vme_xky[MXXKYB-1 : 0]),    // IN 
-
 // Sequencer Ports: Raw Hits Ram
 	.dmb_wr					(dmb_wr),							// Out	Raw hits RAM VME write enable
 	.dmb_reset				(dmb_reset),						// Out	Raw hits RAM VME address reset
@@ -3507,11 +3315,11 @@
 	.scp_rdata				(scp_rdata[15:0]),				// In	Recorded channel data
 
 //  Sequencer Ports: Miniscope
-//KS remove rpc and miniscope 2022	.mini_read_enable		(mini_read_enable),				// Out	Enable Miniscope readout
-//KS remove rpc and miniscope 2022	.mini_tbins_test		(mini_tbins_test),				// Out	Miniscope data=address for testing
-//KS remove rpc and miniscope 2022	.mini_tbins_word		(mini_tbins_word),				// Out	Insert tbins and pretrig tbins in 1st word
-//KS remove rpc and miniscope 2022	.fifo_tbins_mini		(fifo_tbins_mini[MXTBIN-1:0]),	// Out	Number Mini FIFO time bins to read out
-//KS remove rpc and miniscope 2022	.fifo_pretrig_mini		(fifo_pretrig_mini[MXTBIN-1:0]),// Out	Number Mini FIFO time bins before pretrigger
+	.mini_read_enable		(mini_read_enable),				// Out	Enable Miniscope readout
+	.mini_tbins_test		(mini_tbins_test),				// Out	Miniscope data=address for testing
+	.mini_tbins_word		(mini_tbins_word),				// Out	Insert tbins and pretrig tbins in 1st word
+	.fifo_tbins_mini		(fifo_tbins_mini[MXTBIN-1:0]),	// Out	Number Mini FIFO time bins to read out
+	.fifo_pretrig_mini		(fifo_pretrig_mini[MXTBIN-1:0]),// Out	Number Mini FIFO time bins before pretrigger
 
 // TMB Ports: Configuration
 	.alct_delay				(alct_delay[3:0]),				// Out	Delay ALCT for CLCT match window
@@ -3682,12 +3490,6 @@
 	.event_counter63		(event_counter63[MXCNTVME-1:0]),	// In
 	.event_counter64		(event_counter64[MXCNTVME-1:0]),	// In
 	.event_counter65		(event_counter65[MXCNTVME-1:0]),	// In
-    //HMT counters
-	.event_counter96		(event_counter96[MXCNTVME-1:0]),	// Out
-	.event_counter97		(event_counter97[MXCNTVME-1:0]),	// Out
-	.event_counter103		(event_counter103[MXCNTVME-1:0]),	// Out
-	.event_counter116		(event_counter116[MXCNTVME-1:0]),	// Out
-	.event_counter117		(event_counter117[MXCNTVME-1:0]),	// Out
 
 // Header Counter Ports
 	.hdr_clear_on_resync	(hdr_clear_on_resync),				// Out	Clear header counters on ttc_resync
@@ -3719,8 +3521,6 @@
   .active_cfeb3_event_counter      (active_cfeb3_event_counter[MXCNTVME-1:0]),      // In
   .active_cfeb4_event_counter      (active_cfeb4_event_counter[MXCNTVME-1:0]),      // In
 
-    .bx0_match_counter  (bx0_match_counter),// In
-
 // CSC Orientation Ports
 	.csc_type				(csc_type[3:0]),					// In	Firmware compile type
 	.csc_me1ab				(csc_me1ab),						// In	1=ME1A or ME1B CSC type
@@ -3744,12 +3544,12 @@
 	.perr_reset				(perr_reset),						// Out	Reset parity errors
 	.perr_cfeb				(perr_cfeb[MXCFEB-1:0]),			// In	CFEB RAM parity error
 	.perr_rpc				(perr_rpc),							// In	RPC  RAM parity error
-//KS remove rpc and miniscope 2022	.perr_mini				(perr_mini),						// In	Mini RAM parity error
+	.perr_mini				(perr_mini),						// In	Mini RAM parity error
 	.perr_en				(perr_en),							// In	Parity error latch enabled
 	.perr					(perr),								// In	Parity error summary		
 	.perr_cfeb_ff			(perr_cfeb_ff[MXCFEB-1:0]),			// In	CFEB RAM parity error, latched
 	.perr_rpc_ff			(perr_rpc_ff),						// In	RPC  RAM parity error, latched
-//KS remove rpc and miniscope 2022	.perr_mini_ff			(perr_mini_ff),						// In	Mini RAM parity error, latched
+	.perr_mini_ff			(perr_mini_ff),						// In	Mini RAM parity error, latched
 	.perr_ff				(perr_ff),							// In	Parity error summary,  latched
 	.perr_ram_ff			(perr_ram_ff[48:0]),				// In	Mapped bad parity RAMs, 30 cfebs, 5 rpcs, 2 miniscope
 
@@ -3826,9 +3626,8 @@
 //-------------------------------------------------------------------------------------------------------------------
 // Unused Signal Sump
 //-------------------------------------------------------------------------------------------------------------------
-//KS remove rpc and miniscope 2022
-	assign sump = ccb_sump | alct_sump | sequencer_sump | tmb_sump | buf_sump	|
-	vme_sump | rpc_inj_sel | (|cfeb_sump) | inj_ram_sump   | clock_ctrl_sump;
+	assign sump = ccb_sump | alct_sump |   rpc_sump   | sequencer_sump | tmb_sump | buf_sump	|
+	vme_sump | rpc_inj_sel | mini_sump | (|cfeb_sump) | inj_ram_sump   | clock_ctrl_sump;
 
 //-------------------------------------------------------------------------------------------------------------------
 	endmodule
