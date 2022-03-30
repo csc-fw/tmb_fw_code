@@ -6277,7 +6277,7 @@
   assign run3_format_ctrl_rd[1]    = run3_trig_df ;//only enable it for CCLUT case
   assign run3_format_ctrl_rd[2]    = run3_daq_df  ; 
   assign run3_format_ctrl_rd[3]    = run3_alct_df ;
-  assign run3_format_ctrl_rd[4]    = run3_revcode ;
+  assign run3_format_ctrl_rd[4]    = run2_revcode ;
   assign run3_format_ctrl_rd[15:5] = run3_format_ctrl_wr[15:5];
       
 
