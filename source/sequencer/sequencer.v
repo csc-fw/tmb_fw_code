@@ -911,6 +911,8 @@
   active_cfeb4_event_counter,      // CFEB4 active flag sent to DMB
 
   bx0_match_counter,
+  hmt_trigger_counter,
+  hmt_readout_counter,
 
 // Parity Errors
 	perr_pulse,
@@ -1644,6 +1646,9 @@
   output  [MXCNTVME-1:0] active_cfeb4_event_counter;      // CFEB4 active flag sent to DMB
 
     output  [MXCNTVME-1:0] bx0_match_counter;      // alctxclct bx0 match counter
+    output  [MXCNTVME-1:0]  hmt_trigger_counter;
+    output  [MXCNTVME-1:0]  hmt_readout_counter;
+
 
 // Parity Errors
 	input					perr_pulse;				// Parity error pulse for counting
@@ -2183,6 +2188,24 @@
       end
 
 
+// Trigger counter, presets at evcntres or resync, counts all triggers including ones not sent to mpc
+  reg   [MXCNTVME-1:0]  hmt_trigger_counter = 0;
+  reg   [MXCNTVME-1:0]  hmt_readout_counter = 0;
+
+  wire hmt_fired_tmb_ff   = (|hmt_anode[1:0]) & run3_alct_df & run3_trig_df;
+  wire hmt_readout_tmb_ff = (|hmt_anode[1:0]) & run3_alct_df & run3_daq_df;
+  wire hmt_cnt_reset = ccb_evcntres || (ttc_resync && hdr_clear_on_resync);
+  wire hmt_trig_cnt_ovf   = (hmt_trigger_counter == {MXCNTVME{1'b1}});
+  wire hmt_ro_cnt_ovf     = (hmt_readout_counter == {MXCNTVME{1'b1}});
+  wire hmt_trig_cnt_en    = hmt_fired_tmb_ff   && !hmt_trig_cnt_ovf;
+  wire hmt_ro_cnt_en      = hmt_readout_tmb_ff && !hmt_ro_cnt_ovf;
+
+  always @(posedge clock) begin
+    if      (hmt_cnt_reset) hmt_trigger_counter = 0;
+    else if (hmt_trig_cnt_en   ) hmt_trigger_counter = hmt_trigger_counter+1'b1;
+    if      (hmt_cnt_reset)   hmt_readout_counter = 0;
+    else if (hmt_ro_cnt_en   )   hmt_readout_counter = hmt_readout_counter+1'b1;
+  end
 
 //------------------------------------------------------------------------------------------------------------------
 // Trigger Source Section
@@ -2874,7 +2897,7 @@
     assign event_counter97  = cnt[67];
     assign event_counter103 = cnt[68];
     assign event_counter116 = cnt[69];
-    assign event_counter117  = cnt[70];
+    assign event_counter117 = cnt[70];
 
 //------------------------------------------------------------------------------------------------------------------
 // Multi-buffer storage for event header
@@ -4262,8 +4285,8 @@
 	assign	header41_[9]		=	r_tmb_trig_keep;			// Triggering readout event
 	assign	header41_[10]		=	r_tmb_non_trig_keep;		// Non-triggering readout event
   assign  header41_[12:11]  =  run3_daq_df ? 2'b00 : lyr_thresh_pretrig[1:0];  // Layer pre-trigger threshold
-  assign  header41_[13]     =  run3_daq_df ? r_alct_bxn[1] & run3_alct_df : lyr_thresh_pretrig[2];
-  assign  header41_[14]     =  run3_daq_df ? r_alct_bxn[2] & run3_alct_df : layer_trig_en;        // Layer trigger mode enabled
+  assign  header41_[13]     =  run3_daq_df ? (r_alct_bxn[1] & run3_alct_df) : lyr_thresh_pretrig[2];
+  assign  header41_[14]     =  run3_daq_df ? (r_alct_bxn[2] & run3_alct_df) : layer_trig_en;        // Layer trigger mode enabled
 	//assign	header41_[13:11]	=	lyr_thresh_pretrig[2:0];	// Layer pre-trigger threshold
 	//assign	header41_[14]		=	layer_trig_en;				// Layer trigger mode enabled
 	assign	header41_[18:15]	=	0;							// DDU+DMB control flags

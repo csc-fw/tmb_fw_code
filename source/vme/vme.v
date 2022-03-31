@@ -739,6 +739,8 @@
   active_cfeb4_event_counter,      // CFEB4 active flag sent to DMB
 
   bx0_match_counter,
+  hmt_trigger_counter,
+  hmt_readout_counter,
 
 // CSC Orientation Ports
 	csc_type,
@@ -1927,6 +1929,8 @@
   input  [MXCNTVME-1:0] active_cfeb4_event_counter;      // CFEB4 active flag sent to DMB
 
   input [MXCNTVME-1:0] bx0_match_counter;
+  input [MXCNTVME-1:0]  hmt_trigger_counter;
+  input [MXCNTVME-1:0]  hmt_readout_counter;
 
 // CSC Orientation Ports
 	input	[3:0]			csc_type;				// Firmware compile type
@@ -5591,15 +5595,16 @@
   assign cnt[105]  = {MXCNTVME{1'b0}};
   assign cnt[106]  = {MXCNTVME{1'b0}};
   assign cnt[107]  = {MXCNTVME{1'b0}};
-  assign cnt[108]  = {MXCNTVME{1'b0}};
+  assign cnt[108]  = event_counter96;
   assign cnt[109]  = {MXCNTVME{1'b0}};
   assign cnt[110]  = {MXCNTVME{1'b0}};
   assign cnt[111]  = {MXCNTVME{1'b0}};
   assign cnt[112]  = {MXCNTVME{1'b0}};
-  assign cnt[114]  = {MXCNTVME{1'b0}};
-  assign cnt[115]  = {MXCNTVME{1'b0}};
-  assign cnt[116]  = event_counter116;
-  assign cnt[117]  = event_counter117;
+  assign cnt[113]  = {MXCNTVME{1'b0}};
+  assign cnt[114]  = event_counter116;
+  assign cnt[115]  = event_counter117;
+  assign cnt[116]  = hmt_trigger_counter;
+  assign cnt[117]  = hmt_readout_counter;
 
 
 
