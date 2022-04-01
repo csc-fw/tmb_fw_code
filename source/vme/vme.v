@@ -5459,8 +5459,8 @@
 // ADR_CNT_RDATA=D2	Trigger/Readout Counter Data Register
 //------------------------------------------------------------------------------------------------------------------
 // Remap 1D counters to 2D, beco XST does not support 2D ports
-	parameter MXCNT=96;	// Number of counters, last counter id is mxcnt-1. Same number of counters in ME1/1 OTMB and TMB , KSedit trigger data format ?
-    parameter MXCNT=118; //adding HMT counters
+	//parameter MXCNT=96;	// Number of counters, last counter id is mxcnt-1. Same number of counters in ME1/1 OTMB and TMB , KSedit trigger data format ?
+   parameter MXCNT=118; //adding HMT counters
 	reg  [MXCNTVME-1:0]	cnt_snap [MXCNT-1:0];		// Event counter snapshot 2D
 	wire [MXCNTVME-1:0]	cnt      [MXCNT-1:0];		// Event counter 2D map
 

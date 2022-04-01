@@ -1163,7 +1163,7 @@
     reg hmt_fired_tmb_ff   = 0;
 
 	always @(posedge clock) begin
-    hmt_fired_tmb_ff     <= hmt_fired_tmb;
+    hmt_fired_tmb_ff     <= anode_hmt_fired_pipe;
     tmb_pulse_hmt_only   <= anode_hmt_fired_pipe && !trig_pulse;
     tmb_keep_hmt_only    <= anode_hmt_fired_pipe && !trig_keep;
 
@@ -1578,7 +1578,7 @@
       //wire trig_mpc0 = run3_trig_df ? (trig_mpc && lct0_vpf_run3 && !kill_clct0): (trig_mpc && lct0_vpf && !kill_clct0);  // LCT 0 is valid, send to mpc
       //wire trig_mpc1 = run3_trig_df ? (trig_mpc && lct1_vpf_run3 && !kill_clct0): (trig_mpc && lct1_vpf && !kill_clct1);  // LCT 1 is valid, send to mpc
       wire trig_mpc0 = run3_trig_df ? (trig_mpc && (hmt_fired_tmb_ff || (lct0_vpf_run3 && !kill_clct0))): (trig_mpc && lct0_vpf && !kill_clct0);  // LCT 0 is valid, send to      mpc
-171   wire trig_mpc1 = run3_trig_df ? (trig_mpc && (hmt_fired_tmb_ff || (lct1_vpf_run3 && !kill_clct1))): (trig_mpc && lct1_vpf && !kill_clct1);  // LCT 1 is valid, send to      mpc
+      wire trig_mpc1 = run3_trig_df ? (trig_mpc && (hmt_fired_tmb_ff || (lct1_vpf_run3 && !kill_clct1))): (trig_mpc && lct1_vpf && !kill_clct1);  // LCT 1 is valid, send to      mpc
 
       assign mpc0_frame0_pulse = (trig_mpc0) ? (run3_trig_df ? mpc0_frame0_run3 : mpc0_frame0) : 16'h0;
       assign mpc0_frame1_pulse = (trig_mpc0) ? (run3_trig_df ? mpc0_frame1_run3 : mpc0_frame1) : 16'h0;
