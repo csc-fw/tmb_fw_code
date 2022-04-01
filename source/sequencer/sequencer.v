@@ -2551,11 +2551,11 @@
 	wire [MXCFEB-1:0]	aff_list_xtmb		= postdrift_data[20:16];	// Active feb list
 
 // After drift, send CLCT words to TMB, persist 1 cycle only, blank invalid CLCTs unless override
-	wire clct0_hit_valid = (hs_hit_1st >= hit_thresh_postdrift);		// CLCT is over hit thresh
+	wire clct0_hit_valid = (hs_hit_1st >= hit_thresh_postdrift) && (hs_hit_1st <= 3'd6);		// CLCT is over hit thresh
 	wire clct0_pid_valid = (hs_pid_1st >= pid_thresh_postdrift);		// CLCT is over pid thresh
         //wire clct0_pid_valid = (ccLUT_enable && !run3_trig_df) ? (hs_run2pid_1st >= pid_thresh_postdrift) : (hs_pid_1st >= pid_thresh_postdrift);
 
-	wire clct1_hit_valid = (hs_hit_2nd >= hit_thresh_postdrift);		// CLCT is over hit thresh
+	wire clct1_hit_valid = (hs_hit_2nd >= hit_thresh_postdrift) && (hs_hit_2nd <= 3'd6);		// CLCT is over hit thresh
 	wire clct1_pid_valid = (hs_pid_2nd >= pid_thresh_postdrift);		// CLCT is over pid thresh
     //wire clct1_pid_valid = (ccLUT_enable && !run3_trig_df) ? (hs_run2pid_2nd >= pid_thresh_postdrift) : (hs_pid_2nd >= pid_thresh_postdrift);
 
@@ -2630,6 +2630,8 @@
       //assign clct0_xky_xtmb   = clct0_xky & {MXXKYB {!clct0_blanking}};
       //assign clct1_carry_xtmb = clct1_carry & {MXPATC {!clct1_blanking}};
       //assign clct1_xky_xtmb   = clct1_xky & {MXXKYB {!clct1_blanking}};
+      assign clct0_bnd_xtmb     = {MXBNDB {1'b0}};
+      assign clct1_bnd_xtmb     = {MXBNDB {1'b0}};
 
 // Latch CLCTs for VME
 	reg [MXCLCT-1:0]	clct0_vme=0;
@@ -2702,6 +2704,8 @@
 	wire discard_tmbreject_cnt_en	= discard_tmbreject;
 	wire discard_event_led			= discard_nowrbuf || discard_noalct || discard_tmbreject;
 
+    wire tmb_trig_pulse_mu = tmb_trig_pulse && !tmb_pulse_hmt_only;
+    wire tmb_trig_keep_mu  = tmb_trig_keep  && !tmb_keep_hmt_only;
 // L1A requested but not received or L1A received and no TMB in window
 	wire l1a_match_cnt_en = l1a_match;	// TMB triggered, TMB in L1A window
 	wire l1a_notmb_cnt_en = l1a_notmb;	// L1A received, no TMB in window
@@ -2745,13 +2749,15 @@
 	cnt_en[29]	<= clct_push_xtmb && clct0_vpf;			// CLCT CLCT0 sent to TMB matching
 	cnt_en[30]	<= clct_push_xtmb && clct1_vpf;			// CLCT CLCT1 sent to TMB matching
 
-	cnt_en[31]	<= tmb_trig_pulse && tmb_trig_keep;		// TMB	TMB matching accepted a match, alct-only, or clct-only event
+	//cnt_en[31]	<= tmb_trig_pulse && tmb_trig_keep;		// TMB	TMB matching accepted a match, alct-only, or clct-only event
+    cnt_en[31]  <= tmb_trig_pulse_mu && tmb_trig_keep_mu;     // TMB  TMB matching accepted a match, alct-only, or clct-only event
 	cnt_en[32]	<= tmb_trig_write && tmb_match;			// TMB	CLCT*ALCT matched trigger
 	cnt_en[33]	<= tmb_trig_write && tmb_alct_only;		// TMB	ALCT-only trigger
 	cnt_en[34]	<= tmb_trig_write && tmb_clct_only;		// TMB	CLCT-only trigger
 
 	cnt_en[35]	<= discard_tmbreject_cnt_en;			// TMB	TMB matching rejected event
-	cnt_en[36]	<= tmb_trig_pulse && tmb_non_trig_keep;	// TMB	TMB matching rejected event, but keep for readout anyway
+	//cnt_en[36]	<= tmb_trig_pulse && tmb_non_trig_keep;	// TMB	TMB matching rejected event, but keep for readout anyway
+    cnt_en[36]  <= tmb_trig_pulse_mu && tmb_non_trig_keep; // TMB  TMB matching rejected event, but keep for readout anyway
 	cnt_en[37]	<= tmb_trig_write && tmb_alct_discard;	// TMB	TMB matching discarded an ALCT pair
 	cnt_en[38]	<= tmb_trig_write && tmb_clct_discard;	// TMB	TMB matching discarded a  CLCT pair
 	cnt_en[39]	<= tmb_trig_write && tmb_clct0_discard;	// TMB	TMB matching discarded CLCT0 from ME1A

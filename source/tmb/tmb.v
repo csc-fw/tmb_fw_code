@@ -1160,8 +1160,10 @@
     assign hmt_anode_alct_match = anode_hmt_fired_pipe && alct0_pipe_vpf;
     reg tmb_pulse_hmt_only = 0;
     reg tmb_keep_hmt_only  = 0;
+    reg hmt_fired_tmb_ff   = 0;
 
 	always @(posedge clock) begin
+    hmt_fired_tmb_ff     <= hmt_fired_tmb;
     tmb_pulse_hmt_only   <= anode_hmt_fired_pipe && !trig_pulse;
     tmb_keep_hmt_only    <= anode_hmt_fired_pipe && !trig_keep;
 
@@ -1190,7 +1192,8 @@
 	tmb_alcte			<= alcte_pipe[1:0];
     //Tao, might update readout with anode HMT
 	wr_adr_rtmb   		<= wr_adr_xtmb_pipe;					// Buffer write address at TMB matching time, continuous
-	wr_push_rtmb  		<= wr_push_mux;							// Buffer write strobe at TMB matching time
+	//wr_push_rtmb  		<= wr_push_mux;							// Buffer write strobe at TMB matching time
+	wr_push_rtmb  		<= hmt_fired_only || wr_push_mux;							// Buffer write strobe at TMB matching time
 	wr_avail_rtmb 		<= wr_avail_xtmb_pipe;					// Buffer available at TMB matching time
     //wr_adr_rtmb          <= hmt_fired_only ? wr_adr_xpre_hmt_pipe : wr_adr_xtmb_pipe;   // Buffer write address at TMB matching time, continuous
     //wr_push_rtmb         <= hmt_fired_only ? wr_push_mux_hmt : wr_push_mux;        // Buffer write strobe at TMB matching time
@@ -1572,8 +1575,10 @@
 	//assign mpc0_frame1_pulse = (trig_mpc0) ? mpc0_frame1 : 16'h0;
 	//assign mpc1_frame0_pulse = (trig_mpc1) ? mpc1_frame0 : 16'h0;
 	//assign mpc1_frame1_pulse = (trig_mpc1) ? mpc1_frame1 : 16'h0;
-      wire trig_mpc0 = run3_trig_df ? (trig_mpc && lct0_vpf_run3 && !kill_clct0): (trig_mpc && lct0_vpf && !kill_clct0);  // LCT 0 is valid, send to mpc
-      wire trig_mpc1 = run3_trig_df ? (trig_mpc && lct1_vpf_run3 && !kill_clct0): (trig_mpc && lct1_vpf && !kill_clct1);  // LCT 1 is valid, send to mpc
+      //wire trig_mpc0 = run3_trig_df ? (trig_mpc && lct0_vpf_run3 && !kill_clct0): (trig_mpc && lct0_vpf && !kill_clct0);  // LCT 0 is valid, send to mpc
+      //wire trig_mpc1 = run3_trig_df ? (trig_mpc && lct1_vpf_run3 && !kill_clct0): (trig_mpc && lct1_vpf && !kill_clct1);  // LCT 1 is valid, send to mpc
+      wire trig_mpc0 = run3_trig_df ? (trig_mpc && (hmt_fired_tmb_ff || (lct0_vpf_run3 && !kill_clct0))): (trig_mpc && lct0_vpf && !kill_clct0);  // LCT 0 is valid, send to      mpc
+171   wire trig_mpc1 = run3_trig_df ? (trig_mpc && (hmt_fired_tmb_ff || (lct1_vpf_run3 && !kill_clct1))): (trig_mpc && lct1_vpf && !kill_clct1);  // LCT 1 is valid, send to      mpc
 
       assign mpc0_frame0_pulse = (trig_mpc0) ? (run3_trig_df ? mpc0_frame0_run3 : mpc0_frame0) : 16'h0;
       assign mpc0_frame1_pulse = (trig_mpc0) ? (run3_trig_df ? mpc0_frame1_run3 : mpc0_frame1) : 16'h0;
