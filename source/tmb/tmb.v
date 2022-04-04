@@ -1340,7 +1340,7 @@
 	end
 
 	always @* begin
-	if      (tmb_no_alct || !tmb_anode_hmt) begin alct0 <= alct_dummy; alct1 <= alct_dummy; end // alct0 and alct1 do not exist, use dummy alct
+	if      (tmb_no_alct && !tmb_anode_hmt) begin alct0 <= alct_dummy; alct1 <= alct_dummy; end // alct0 and alct1 do not exist, use dummy alct
 	else if (tmb_dupe_alct) begin alct0 <= alct0_real; alct1 <= alct0_real; end // alct0 exists, but alct1 does not exist, copy alct0 into alct1
 	else                    begin alct0 <= alct0_real; alct1 <= alct1_real; end // alct0 and alct1 exist, so use them
 	end
