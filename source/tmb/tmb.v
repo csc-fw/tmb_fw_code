@@ -1156,7 +1156,7 @@
 	reg [ 4:0]	tmb_alctb    = 0;								// ALCT bxn latched at trigger
 	reg	[ 1:0]	tmb_alcte    = 0;								// ALCT ecc latched at trigger
 
-    wire   hmt_fired_only = anode_hmt_fired_pipe  && !trig_pulse;
+    wire   hmt_fired_only = anode_hmt_fired_pipe  && !trig_keep;
     assign hmt_anode_alct_match = anode_hmt_fired_pipe && alct0_pipe_vpf;
     reg tmb_pulse_hmt_only = 0;
     reg tmb_keep_hmt_only  = 0;
@@ -1193,7 +1193,7 @@
     //Tao, might update readout with anode HMT
 	wr_adr_rtmb   		<= wr_adr_xtmb_pipe;					// Buffer write address at TMB matching time, continuous
 	//wr_push_rtmb  		<= wr_push_mux;							// Buffer write strobe at TMB matching time
-	wr_push_rtmb  		<= hmt_fired_only || wr_push_mux;							// Buffer write strobe at TMB matching time
+	wr_push_rtmb  		<= anode_hmt_fired_pipe || wr_push_mux;							// Buffer write strobe at TMB matching time
 	wr_avail_rtmb 		<= wr_avail_xtmb_pipe;					// Buffer available at TMB matching time
     //wr_adr_rtmb          <= hmt_fired_only ? wr_adr_xpre_hmt_pipe : wr_adr_xtmb_pipe;   // Buffer write address at TMB matching time, continuous
     //wr_push_rtmb         <= hmt_fired_only ? wr_push_mux_hmt : wr_push_mux;        // Buffer write strobe at TMB matching time
@@ -1288,7 +1288,6 @@
 	
 	wire [1:0] clct_bxn_insert	= clctc_real[1:0];			// CLCT bunch crossing number for events missing alct
 
-    wire    tmb_anode_hmt = run3_alct_df ? |(alct0_real[13:12]) : 1'b0;
 	wire	tmb_no_alct  = !alct0_vpf;
 	wire	tmb_no_clct  = !clct0_vpf;
 
@@ -1301,7 +1300,17 @@
 	wire	tmb_dupe_alct = tmb_one_alct && tmb_two_clct;	// Duplicate alct if there are 2 clcts
 	wire	tmb_dupe_clct = tmb_one_clct && tmb_two_alct;	// Duplicate clct if there are 2 alcts
 
-// Duplicate alct and clct
+      reg [1:0] hmt_anode_outtime [2:0];
+      wire [1:0] anode_hmt_bits = run3_alct_df ? alct0_real[13:12] : 2'b00;
+      always @(posedge clock) begin
+           hmt_anode_outtime[0] <=  anode_hmt_bits;
+           hmt_anode_outtime[1] <=  hmt_anode_outtime[0];
+           hmt_anode_outtime[2] <=  hmt_anode_outtime[1];
+      end
+
+      wire [MXHMTB-1:0]  hmt_trigger_run3 = {hmt_anode_outtime[2][1:0], anode_hmt_bits[1:0]};
+
+// Duplicate alct and clct for muon trigger
 	reg  [MXALCT-1:0]  alct0;
 	reg  [MXALCT-1:0]  alct1;
 	wire [MXALCT-1:0]  alct_dummy;
@@ -1340,7 +1349,7 @@
 	end
 
 	always @* begin
-	if      (tmb_no_alct && !tmb_anode_hmt) begin alct0 <= alct_dummy; alct1 <= alct_dummy; end // alct0 and alct1 do not exist, use dummy alct
+	if      (tmb_no_alct  ) begin alct0 <= alct_dummy; alct1 <= alct_dummy; end // alct0 and alct1 do not exist, use dummy alct
 	else if (tmb_dupe_alct) begin alct0 <= alct0_real; alct1 <= alct0_real; end // alct0 exists, but alct1 does not exist, copy alct0 into alct1
 	else                    begin alct0 <= alct0_real; alct1 <= alct1_real; end // alct0 and alct1 exist, so use them
 	end
@@ -1494,16 +1503,6 @@
 //------------------------------------------------------------------------------------------------------------------
 // Format MPC output words
 //------------------------------------------------------------------------------------------------------------------
-      reg [1:0] hmt_anode_outtime [2:0];
-      wire [1:0] anode_hmt_bits = run3_alct_df ? alct0[13:12] : 2'b00;
-      always @(posedge clock) begin
-           hmt_anode_outtime[0] <=  anode_hmt_bits;
-           hmt_anode_outtime[1] <=  hmt_anode_outtime[0];
-           hmt_anode_outtime[2] <=  hmt_anode_outtime[1];
-      end
-
-      wire [MXHMTB-1:0]  hmt_trigger_run3 = {hmt_anode_outtime[2][1:0], anode_hmt_bits[1:0]};
-
       wire [4:0] clct0_bnd_run3 = {clct0_bend, clct0_pat};
       wire [4:0] clct1_bnd_run3 = {clct1_bend, clct1_pat}; 
       wire [9:0] clct0_xky_run3 = {clct0[15:8], 2'b00};
