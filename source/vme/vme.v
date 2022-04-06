@@ -739,6 +739,8 @@
   active_cfeb4_event_counter,      // CFEB4 active flag sent to DMB
 
   bx0_match_counter,
+  hmt_trigger_counter,
+  hmt_readout_counter,
 
 // CSC Orientation Ports
 	csc_type,
@@ -1927,6 +1929,8 @@
   input  [MXCNTVME-1:0] active_cfeb4_event_counter;      // CFEB4 active flag sent to DMB
 
   input [MXCNTVME-1:0] bx0_match_counter;
+  input [MXCNTVME-1:0]  hmt_trigger_counter;
+  input [MXCNTVME-1:0]  hmt_readout_counter;
 
 // CSC Orientation Ports
 	input	[3:0]			csc_type;				// Firmware compile type
@@ -5455,7 +5459,8 @@
 // ADR_CNT_RDATA=D2	Trigger/Readout Counter Data Register
 //------------------------------------------------------------------------------------------------------------------
 // Remap 1D counters to 2D, beco XST does not support 2D ports
-	parameter MXCNT=96;	// Number of counters, last counter id is mxcnt-1. Same number of counters in ME1/1 OTMB and TMB , KSedit trigger data format ?
+	//parameter MXCNT=96;	// Number of counters, last counter id is mxcnt-1. Same number of counters in ME1/1 OTMB and TMB , KSedit trigger data format ?
+   parameter MXCNT=118; //adding HMT counters
 	reg  [MXCNTVME-1:0]	cnt_snap [MXCNT-1:0];		// Event counter snapshot 2D
 	wire [MXCNTVME-1:0]	cnt      [MXCNT-1:0];		// Event counter 2D map
 
@@ -5564,20 +5569,43 @@
   assign cnt[87]  = active_cfeb4_event_counter;      // CFEB4 active flag sent to DMB
   assign cnt[92]  = active_cfebs_event_counter;      // Any CFEB active flag sent to DMB
 
-  //assign cnt[88]  = {MXCNTVME{1'b0}};                // CFEB5 active flag sent to DMB - it is used in ME1/1 OTMB only
-  //assign cnt[89]  = {MXCNTVME{1'b0}};                // CFEB6 active flag sent to DMB - it is used in ME1/1 OTMB only
-  //assign cnt[90]  = {MXCNTVME{1'b0}};                // ME1a CFEB active flag sent to DMB - it is used in ME1/1 OTMB only
-  //assign cnt[91]  = {MXCNTVME{1'b0}};                // ME1b CFEB active flag sent to DMB - it is used in ME1/1 OTMB only
-  //assign cnt[93]  = {MXCNTVME{1'b0}};  //reserd for localized dead zone
+  assign cnt[88]  = {MXCNTVME{1'b0}};                // CFEB5 active flag sent to DMB - it is used in ME1/1 OTMB only
+  assign cnt[89]  = {MXCNTVME{1'b0}};                // CFEB6 active flag sent to DMB - it is used in ME1/1 OTMB only
+  assign cnt[90]  = {MXCNTVME{1'b0}};                // ME1a CFEB active flag sent to DMB - it is used in ME1/1 OTMB only
+  assign cnt[91]  = {MXCNTVME{1'b0}};                // ME1b CFEB active flag sent to DMB - it is used in ME1/1 OTMB only
+  assign cnt[93]  = {MXCNTVME{1'b0}};  //reserd for localized dead zone
   assign cnt[94]  = {MXCNTVME{1'b0}};  //reserd for localized dead zone
   //tmp reuse for HMT, the definition in software should be changed!!!
-  assign cnt[88]  = event_counter96;
-  assign cnt[89]  = event_counter97;
-  assign cnt[90]  = event_counter103;
-  assign cnt[91]  = event_counter116;
-  assign cnt[93]  = event_counter117;
+  //assign cnt[88]  = event_counter96;
+  //assign cnt[89]  = event_counter97;
+  //assign cnt[90]  = event_counter103;
+  //assign cnt[91]  = event_counter116;
+  //assign cnt[93]  = event_counter117;
   //assign cnt[94]  = event_counter65;
   assign cnt[95]  = bx0_match_counter; 
+  assign cnt[96]  = event_counter96;
+  assign cnt[97]  = event_counter97;
+  assign cnt[98]  = {MXCNTVME{1'b0}};
+  assign cnt[99]  = {MXCNTVME{1'b0}};
+  assign cnt[100]  = {MXCNTVME{1'b0}};
+  assign cnt[101]  = {MXCNTVME{1'b0}};
+  assign cnt[102]  = {MXCNTVME{1'b0}};
+  assign cnt[103]  = event_counter103;
+  assign cnt[104]  = {MXCNTVME{1'b0}};
+  assign cnt[105]  = {MXCNTVME{1'b0}};
+  assign cnt[106]  = {MXCNTVME{1'b0}};
+  assign cnt[107]  = {MXCNTVME{1'b0}};
+  assign cnt[108]  = event_counter96;
+  assign cnt[109]  = {MXCNTVME{1'b0}};
+  assign cnt[110]  = {MXCNTVME{1'b0}};
+  assign cnt[111]  = {MXCNTVME{1'b0}};
+  assign cnt[112]  = {MXCNTVME{1'b0}};
+  assign cnt[113]  = {MXCNTVME{1'b0}};
+  assign cnt[114]  = event_counter116;
+  assign cnt[115]  = event_counter117;
+  assign cnt[116]  = hmt_trigger_counter;
+  assign cnt[117]  = hmt_readout_counter;
+
 
 
 // Snapshot current value of all counters at once

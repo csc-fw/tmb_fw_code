@@ -911,6 +911,8 @@
   active_cfeb4_event_counter,      // CFEB4 active flag sent to DMB
 
   bx0_match_counter,
+  hmt_trigger_counter,
+  hmt_readout_counter,
 
 // Parity Errors
 	perr_pulse,
@@ -1644,6 +1646,9 @@
   output  [MXCNTVME-1:0] active_cfeb4_event_counter;      // CFEB4 active flag sent to DMB
 
     output  [MXCNTVME-1:0] bx0_match_counter;      // alctxclct bx0 match counter
+    output  [MXCNTVME-1:0]  hmt_trigger_counter;
+    output  [MXCNTVME-1:0]  hmt_readout_counter;
+
 
 // Parity Errors
 	input					perr_pulse;				// Parity error pulse for counting
@@ -2183,6 +2188,24 @@
       end
 
 
+// Trigger counter, presets at evcntres or resync, counts all triggers including ones not sent to mpc
+  reg   [MXCNTVME-1:0]  hmt_trigger_counter = 0;
+  reg   [MXCNTVME-1:0]  hmt_readout_counter = 0;
+
+  wire hmt_fired_tmb_ff   = (|hmt_anode[1:0]) & run3_alct_df & run3_trig_df;
+  wire hmt_readout_tmb_ff = (|hmt_anode[1:0]) & run3_alct_df & run3_daq_df;
+  wire hmt_cnt_reset = ccb_evcntres || (ttc_resync && hdr_clear_on_resync);
+  wire hmt_trig_cnt_ovf   = (hmt_trigger_counter == {MXCNTVME{1'b1}});
+  wire hmt_ro_cnt_ovf     = (hmt_readout_counter == {MXCNTVME{1'b1}});
+  wire hmt_trig_cnt_en    = hmt_fired_tmb_ff   && !hmt_trig_cnt_ovf;
+  wire hmt_ro_cnt_en      = hmt_readout_tmb_ff && !hmt_ro_cnt_ovf;
+
+  always @(posedge clock) begin
+    if      (hmt_cnt_reset) hmt_trigger_counter = 0;
+    else if (hmt_trig_cnt_en   ) hmt_trigger_counter = hmt_trigger_counter+1'b1;
+    if      (hmt_cnt_reset)   hmt_readout_counter = 0;
+    else if (hmt_ro_cnt_en   )   hmt_readout_counter = hmt_readout_counter+1'b1;
+  end
 
 //------------------------------------------------------------------------------------------------------------------
 // Trigger Source Section
@@ -2528,11 +2551,11 @@
 	wire [MXCFEB-1:0]	aff_list_xtmb		= postdrift_data[20:16];	// Active feb list
 
 // After drift, send CLCT words to TMB, persist 1 cycle only, blank invalid CLCTs unless override
-	wire clct0_hit_valid = (hs_hit_1st >= hit_thresh_postdrift);		// CLCT is over hit thresh
+	wire clct0_hit_valid = (hs_hit_1st >= hit_thresh_postdrift) && (hs_hit_1st <= 3'd6);		// CLCT is over hit thresh
 	wire clct0_pid_valid = (hs_pid_1st >= pid_thresh_postdrift);		// CLCT is over pid thresh
         //wire clct0_pid_valid = (ccLUT_enable && !run3_trig_df) ? (hs_run2pid_1st >= pid_thresh_postdrift) : (hs_pid_1st >= pid_thresh_postdrift);
 
-	wire clct1_hit_valid = (hs_hit_2nd >= hit_thresh_postdrift);		// CLCT is over hit thresh
+	wire clct1_hit_valid = (hs_hit_2nd >= hit_thresh_postdrift) && (hs_hit_2nd <= 3'd6);		// CLCT is over hit thresh
 	wire clct1_pid_valid = (hs_pid_2nd >= pid_thresh_postdrift);		// CLCT is over pid thresh
     //wire clct1_pid_valid = (ccLUT_enable && !run3_trig_df) ? (hs_run2pid_2nd >= pid_thresh_postdrift) : (hs_pid_2nd >= pid_thresh_postdrift);
 
@@ -2607,6 +2630,8 @@
       //assign clct0_xky_xtmb   = clct0_xky & {MXXKYB {!clct0_blanking}};
       //assign clct1_carry_xtmb = clct1_carry & {MXPATC {!clct1_blanking}};
       //assign clct1_xky_xtmb   = clct1_xky & {MXXKYB {!clct1_blanking}};
+      assign clct0_bnd_xtmb     = {MXBNDB {1'b0}};
+      assign clct1_bnd_xtmb     = {MXBNDB {1'b0}};
 
 // Latch CLCTs for VME
 	reg [MXCLCT-1:0]	clct0_vme=0;
@@ -2679,6 +2704,8 @@
 	wire discard_tmbreject_cnt_en	= discard_tmbreject;
 	wire discard_event_led			= discard_nowrbuf || discard_noalct || discard_tmbreject;
 
+    wire tmb_trig_pulse_mu = tmb_trig_pulse && !tmb_pulse_hmt_only;
+    wire tmb_trig_keep_mu  = tmb_trig_keep  && !tmb_keep_hmt_only;
 // L1A requested but not received or L1A received and no TMB in window
 	wire l1a_match_cnt_en = l1a_match;	// TMB triggered, TMB in L1A window
 	wire l1a_notmb_cnt_en = l1a_notmb;	// L1A received, no TMB in window
@@ -2722,13 +2749,15 @@
 	cnt_en[29]	<= clct_push_xtmb && clct0_vpf;			// CLCT CLCT0 sent to TMB matching
 	cnt_en[30]	<= clct_push_xtmb && clct1_vpf;			// CLCT CLCT1 sent to TMB matching
 
-	cnt_en[31]	<= tmb_trig_pulse && tmb_trig_keep;		// TMB	TMB matching accepted a match, alct-only, or clct-only event
+	//cnt_en[31]	<= tmb_trig_pulse && tmb_trig_keep;		// TMB	TMB matching accepted a match, alct-only, or clct-only event
+    cnt_en[31]  <= tmb_trig_pulse_mu && tmb_trig_keep_mu;     // TMB  TMB matching accepted a match, alct-only, or clct-only event
 	cnt_en[32]	<= tmb_trig_write && tmb_match;			// TMB	CLCT*ALCT matched trigger
 	cnt_en[33]	<= tmb_trig_write && tmb_alct_only;		// TMB	ALCT-only trigger
 	cnt_en[34]	<= tmb_trig_write && tmb_clct_only;		// TMB	CLCT-only trigger
 
 	cnt_en[35]	<= discard_tmbreject_cnt_en;			// TMB	TMB matching rejected event
-	cnt_en[36]	<= tmb_trig_pulse && tmb_non_trig_keep;	// TMB	TMB matching rejected event, but keep for readout anyway
+	//cnt_en[36]	<= tmb_trig_pulse && tmb_non_trig_keep;	// TMB	TMB matching rejected event, but keep for readout anyway
+    cnt_en[36]  <= tmb_trig_pulse_mu && tmb_non_trig_keep; // TMB  TMB matching rejected event, but keep for readout anyway
 	cnt_en[37]	<= tmb_trig_write && tmb_alct_discard;	// TMB	TMB matching discarded an ALCT pair
 	cnt_en[38]	<= tmb_trig_write && tmb_clct_discard;	// TMB	TMB matching discarded a  CLCT pair
 	cnt_en[39]	<= tmb_trig_write && tmb_clct0_discard;	// TMB	TMB matching discarded CLCT0 from ME1A
@@ -2874,7 +2903,7 @@
     assign event_counter97  = cnt[67];
     assign event_counter103 = cnt[68];
     assign event_counter116 = cnt[69];
-    assign event_counter117  = cnt[70];
+    assign event_counter117 = cnt[70];
 
 //------------------------------------------------------------------------------------------------------------------
 // Multi-buffer storage for event header
@@ -4262,8 +4291,8 @@
 	assign	header41_[9]		=	r_tmb_trig_keep;			// Triggering readout event
 	assign	header41_[10]		=	r_tmb_non_trig_keep;		// Non-triggering readout event
   assign  header41_[12:11]  =  run3_daq_df ? 2'b00 : lyr_thresh_pretrig[1:0];  // Layer pre-trigger threshold
-  assign  header41_[13]     =  run3_daq_df ? r_alct_bxn[1] & run3_alct_df : lyr_thresh_pretrig[2];
-  assign  header41_[14]     =  run3_daq_df ? r_alct_bxn[2] & run3_alct_df : layer_trig_en;        // Layer trigger mode enabled
+  assign  header41_[13]     =  run3_daq_df ? (r_alct_bxn[1] & run3_alct_df) : lyr_thresh_pretrig[2];
+  assign  header41_[14]     =  run3_daq_df ? (r_alct_bxn[2] & run3_alct_df) : layer_trig_en;        // Layer trigger mode enabled
 	//assign	header41_[13:11]	=	lyr_thresh_pretrig[2:0];	// Layer pre-trigger threshold
 	//assign	header41_[14]		=	layer_trig_en;				// Layer trigger mode enabled
 	assign	header41_[18:15]	=	0;							// DDU+DMB control flags

@@ -1017,6 +1017,8 @@
   wire  [MXCNTVME-1:0] active_cfeb4_event_counter;      // CFEB4 active flag sent to DMB
 
   wire  [MXCNTVME-1:0] bx0_match_counter;      // ALCT CLCT bx0 match counter
+  wire  [MXCNTVME-1:0]  hmt_trigger_counter;
+  wire  [MXCNTVME-1:0]  hmt_readout_counter;
 
 // CFEB injector RAM map 2D arrays into 1D for ALCT
 	wire	[MXCFEB-1:0]	inj_ramout_pulse;
@@ -2308,6 +2310,8 @@
   .active_cfeb4_event_counter      (active_cfeb4_event_counter[MXCNTVME-1:0]),      // Out
 
     .bx0_match_counter  (bx0_match_counter),     // Out
+    .hmt_trigger_counter(hmt_trigger_counter),  //Out
+    .hmt_readout_counter(hmt_readout_counter),  //Out
 
 // Header Counters
 	.hdr_clear_on_resync	(hdr_clear_on_resync),				// In	Clear header counters on ttc_resync
@@ -3720,6 +3724,8 @@
   .active_cfeb4_event_counter      (active_cfeb4_event_counter[MXCNTVME-1:0]),      // In
 
     .bx0_match_counter  (bx0_match_counter),// In
+    .hmt_trigger_counter(hmt_trigger_counter),  //In
+    .hmt_readout_counter(hmt_readout_counter),  //In
 
 // CSC Orientation Ports
 	.csc_type				(csc_type[3:0]),					// In	Firmware compile type
