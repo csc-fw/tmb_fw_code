@@ -1,6 +1,7 @@
 # tmb_fw_code
 
-Legacy Run2 TMB fiwmare 
+## Firmare for Commissioning 
+This new firmware branch is used for CSC operation in 2022, the beginning of Run3.  
 
 # compile firmware and generate XSVF files, load firmware into prom/FPGA
 
@@ -38,5 +39,4 @@ Between Create and Stop it records all the different jtag commands that it sends
 ### software environment 
 TMB firmware must be compiled with old ISE(ISE10.1) but can be programmed with newer version(like 14.7) of impact tool
 
-## Firmare for Commissioning 
-This new firmware branch is used for CSC operation in 2022, the beginning of Run3
+
